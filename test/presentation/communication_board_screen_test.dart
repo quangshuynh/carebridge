@@ -31,7 +31,17 @@ void main() {
     await tester.tap(find.byKey(const Key('choice-drive')));
     await tester.pump();
     expect(find.text('I want to go for a drive.'), findsOneWidget);
+    expect(find.byKey(const Key('selected-check')), findsOneWidget);
     expect(speech.spokenPhrases, ['I want to go for a drive.']);
+  });
+  testWidgets('visual confirmation survives a speech failure', (tester) async {
+    final speech = FakeSpeechService()..error = StateError('no voice');
+    await tester.pumpWidget(board(speech));
+    await tester.tap(find.byKey(const Key('choice-help')));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.text('I need help.'), findsOneWidget);
+    expect(find.byKey(const Key('selected-check')), findsOneWidget);
   });
   testWidgets('choice exposes accessible button semantics', (tester) async {
     final handle = tester.ensureSemantics();
@@ -51,16 +61,38 @@ void main() {
     );
     handle.dispose();
   });
-  for (final size in [const Size(390, 844), const Size(1024, 768)]) {
-    testWidgets('layout has no overflow at ${size.width}x${size.height}', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
+  for (final configuration in [
+    (size: const Size(390, 844), textScale: 1.0),
+    (size: const Size(844, 390), textScale: 1.0),
+    (size: const Size(768, 1024), textScale: 1.0),
+    (size: const Size(1024, 768), textScale: 1.0),
+    (size: const Size(390, 844), textScale: 2.0),
+  ]) {
+    testWidgets('layout has no overflow at ${configuration.size} and '
+        '${configuration.textScale}x text', (tester) async {
+      tester.view.physicalSize = configuration.size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(board(FakeSpeechService()));
+      await tester.pumpWidget(
+        MediaQuery(
+          data: MediaQueryData(
+            size: configuration.size,
+            textScaler: TextScaler.linear(configuration.textScale),
+          ),
+          child: board(FakeSpeechService()),
+        ),
+      );
       await tester.pump();
+      expect(tester.takeException(), isNull);
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('choice-finished')),
+        200,
+        scrollable: find.descendant(
+          of: find.byKey(const Key('communication-grid')),
+          matching: find.byType(Scrollable),
+        ),
+      );
       expect(tester.takeException(), isNull);
       expect(find.byKey(const Key('choice-finished')), findsOneWidget);
     });

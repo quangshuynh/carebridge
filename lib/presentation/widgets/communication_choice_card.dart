@@ -36,34 +36,63 @@ class CommunicationChoiceCard extends StatelessWidget {
       child: InkWell(
         key: Key('choice-${choice.id}'),
         onTap: choice.isEnabled ? onActivate : null,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.contain,
-                  child: Icon(
-                    choice.visual.icon,
-                    color: const Color(0xFF173A37),
-                    size: 96,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: Icon(
+                          choice.visual.icon,
+                          color: const Color(0xFF173A37),
+                          size: 96,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      choice.label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            color: const Color(0xFF102B29),
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (isSelected)
+              const Positioned(
+                right: 10,
+                top: 10,
+                child: ExcludeSemantics(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Color(0xFF173A37),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(5),
+                      child: Icon(
+                        Icons.check_rounded,
+                        key: Key('selected-check'),
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                choice.label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: const Color(0xFF102B29),
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     ),

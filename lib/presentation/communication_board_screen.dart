@@ -47,7 +47,10 @@ class _CommunicationBoardScreenState extends State<CommunicationBoardScreen> {
   Widget build(BuildContext context) {
     final choices = widget.profile.enabledChoices;
     final selected = widget.controller.selectedChoice;
-    final isWide = MediaQuery.sizeOf(context).width >= 700;
+    final size = MediaQuery.sizeOf(context);
+    final isTablet = size.shortestSide >= 600;
+    final isPhoneLandscape = size.width > size.height;
+    final columnCount = isTablet || isPhoneLandscape ? 3 : 2;
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -55,9 +58,9 @@ class _CommunicationBoardScreenState extends State<CommunicationBoardScreen> {
             constraints: const BoxConstraints(maxWidth: 1100),
             child: Padding(
               padding: EdgeInsets.fromLTRB(
-                isWide ? 32 : 16,
+                isTablet ? 32 : 16,
                 16,
-                isWide ? 32 : 16,
+                isTablet ? 32 : 16,
                 20,
               ),
               child: Column(
@@ -77,10 +80,10 @@ class _CommunicationBoardScreenState extends State<CommunicationBoardScreen> {
                     child: GridView.builder(
                       key: const Key('communication-grid'),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: isWide ? 3 : 2,
-                        crossAxisSpacing: isWide ? 20 : 12,
-                        mainAxisSpacing: isWide ? 20 : 12,
-                        childAspectRatio: isWide ? 1.18 : 0.92,
+                        crossAxisCount: columnCount,
+                        crossAxisSpacing: isTablet ? 20 : 12,
+                        mainAxisSpacing: isTablet ? 20 : 12,
+                        childAspectRatio: isTablet ? 1.18 : 0.92,
                       ),
                       itemCount: choices.length,
                       itemBuilder: (context, index) {
@@ -115,7 +118,9 @@ class _ConfirmationBanner extends StatelessWidget {
       label: choice == null ? phrase : 'Selected. $phrase',
       child: AnimatedContainer(
         key: const Key('confirmation-banner'),
-        duration: const Duration(milliseconds: 180),
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 180),
         constraints: const BoxConstraints(minHeight: 72),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
