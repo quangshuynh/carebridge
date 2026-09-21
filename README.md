@@ -33,11 +33,46 @@ CareBridge is not a diagnostic tool, medical device, treatment, intent-inference
 
 Core communication must remain available offline and on the device. There is no authentication, cloud synchronization, analytics, advertising, or AI. Selection events exist only in memory for the running session; durable local persistence is deliberately deferred until its data lifecycle and caregiver controls are designed.
 
-## Development and testing
+## Run on a physical Android device
 
-Install the current stable [Flutter SDK](https://docs.flutter.dev/get-started/install), then run `flutter pub get` and `flutter run`.
+Install the current stable [Flutter SDK](https://docs.flutter.dev/get-started/install)
+and Android tooling, enable developer options and USB debugging on the device, and
+connect it by USB. Then run:
 
 ```sh
+flutter doctor
+flutter devices
+flutter pub get
+flutter run -d <android-device-id>
+```
+
+Accept the device's debugging prompt if shown. `flutter devices` must list the
+device before deployment. These are deployment instructions, not a claim that the
+current build has completed physical-device validation.
+
+## Run on a physical iPhone or iPad
+
+iOS/iPadOS deployment requires macOS with Xcode; it cannot be built or deployed
+from Windows. On a Mac, install Flutter and Xcode, open `ios/Runner.xcworkspace` in
+Xcode, select the Runner target, and configure a development team for signing.
+Connect and trust the iPhone or iPad, then run:
+
+```sh
+flutter doctor
+flutter devices
+flutter pub get
+flutter run -d <apple-device-id>
+```
+
+Apple may require Developer Mode and trust confirmation on the device. These steps
+do not imply that the app has already been physically validated on Apple hardware.
+Use the [real-device validation checklist](docs/REAL_DEVICE_VALIDATION.md) on both
+platforms.
+
+## Development checks
+
+```sh
+flutter pub get
 dart format --output=none --set-exit-if-changed .
 flutter analyze
 flutter test
