@@ -47,17 +47,71 @@ void main() {
     },
   );
 
-  test('rapid duplicate actions are ignored while speech is pending', () async {
-    final speech = FakeSpeechService()..pendingSpeech = Completer<void>();
+  test(
+    'rapid same-choice actions create one event and one speech call',
+    () async {
+      var time = DateTime.utc(2026, 9, 20);
+      final speech = FakeSpeechService()..pendingSpeech = Completer<void>();
+      final controller = CommunicationBoardController(
+        speechService: speech,
+        now: () => time,
+      );
+      final drive = sampleCommunicator.enabledChoices.singleWhere(
+        (choice) => choice.id == 'drive',
+      );
+      final first = controller.activate(drive);
+      expect(await controller.activate(drive), isFalse);
+      expect(speech.spokenPhrases, hasLength(1));
+      expect(controller.sessionEvents, hasLength(1));
+      speech.pendingSpeech!.complete();
+      expect(await first, isTrue);
+
+      time = time.add(const Duration(milliseconds: 600));
+      expect(await controller.activate(drive), isTrue);
+      expect(speech.spokenPhrases, hasLength(2));
+      expect(controller.sessionEvents, hasLength(2));
+    },
+  );
+
+  test(
+    'a different choice is accepted while earlier speech is pending',
+    () async {
+      final speech = FakeSpeechService()..pendingSpeech = Completer<void>();
+      final controller = CommunicationBoardController(speechService: speech);
+      final drive = sampleCommunicator.enabledChoices.singleWhere(
+        (choice) => choice.id == 'drive',
+      );
+      final help = sampleCommunicator.enabledChoices.singleWhere(
+        (choice) => choice.id == 'help',
+      );
+
+      final first = controller.activate(drive);
+      final second = controller.activate(help);
+
+      expect(controller.selectedChoice, help);
+      expect(controller.sessionEvents.map((event) => event.choiceId), [
+        'drive',
+        'help',
+      ]);
+      expect(speech.spokenPhrases, [
+        'I want to go for a drive.',
+        'I need help.',
+      ]);
+      speech.pendingSpeech!.complete();
+      expect(await first, isTrue);
+      expect(await second, isTrue);
+    },
+  );
+
+  test('speech failure does not undo visual or event communication', () async {
+    final speech = FakeSpeechService()..error = StateError('voice unavailable');
     final controller = CommunicationBoardController(speechService: speech);
-    final drive = sampleCommunicator.enabledChoices.singleWhere(
-      (choice) => choice.id == 'drive',
+    final help = sampleCommunicator.enabledChoices.singleWhere(
+      (choice) => choice.id == 'help',
     );
-    final first = controller.activate(drive);
-    expect(await controller.activate(drive), isFalse);
-    expect(speech.spokenPhrases, hasLength(1));
-    expect(controller.sessionEvents, hasLength(1));
-    speech.pendingSpeech!.complete();
-    expect(await first, isTrue);
+
+    expect(await controller.activate(help), isTrue);
+    expect(controller.selectedChoice, help);
+    expect(controller.sessionEvents.single.choiceId, 'help');
   });
 }

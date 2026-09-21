@@ -9,6 +9,7 @@ class FlutterTtsSpeechService implements SpeechService {
 
   @override
   Future<void> speak(String phrase) async {
+    // A new communication replaces the old one instead of building a queue.
     await _flutterTts.stop();
     await _flutterTts.setLanguage('en-US');
     await _flutterTts.setSpeechRate(0.45);
