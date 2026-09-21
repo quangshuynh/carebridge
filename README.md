@@ -1,3 +1,22 @@
+<p align="center">
+  <img src="docs/images/carebridge-logo.png" alt="CareBridge" width="256">
+</p>
+
+<p align="center">
+  <a href="https://github.com/quangshuynh/carebridge/actions/workflows/ci.yml">
+    <img src="https://github.com/quangshuynh/carebridge/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+  <a href="https://flutter.dev/">
+    <img src="https://img.shields.io/badge/Flutter-stable-02569B?logo=flutter&logoColor=white" alt="Flutter">
+  </a>
+  <a href="https://dart.dev/">
+    <img src="https://img.shields.io/badge/Dart-stable-0175C2?logo=dart&logoColor=white" alt="Dart">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="Apache 2.0 License">
+  </a>
+</p>
+
 # CareBridge
 
 CareBridge is an early-stage, local-first communication app that helps nonverbal people express familiar everyday wants, needs, and routines to caregivers through large visual choices and spoken phrases.
