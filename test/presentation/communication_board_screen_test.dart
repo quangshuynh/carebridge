@@ -44,6 +44,8 @@ void main() {
         isButton: true,
         isEnabled: true,
         hasEnabledState: true,
+        hasSelectedState: true,
+        isSelected: false,
         hasTapAction: true,
       ),
     );
@@ -53,8 +55,10 @@ void main() {
     testWidgets('layout has no overflow at ${size.width}x${size.height}', (
       tester,
     ) async {
-      await tester.binding.setSurfaceSize(size);
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(board(FakeSpeechService()));
       await tester.pump();
       expect(tester.takeException(), isNull);
