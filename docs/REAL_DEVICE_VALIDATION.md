@@ -9,9 +9,14 @@ orientation for each session. Do not record private information in the repositor
 
 ## Device verification
 
+- [ ] The home-screen icon shows the CareBridge mark and the name "CareBridge".
 - [ ] The app launches directly to the six-choice board without an account or
-      network connection.
-- [ ] All six choices remain reachable in phone and tablet portrait and landscape.
+      network connection, including in airplane mode. The launch screen shows
+      only the mark on the board's light background, with no white or black
+      flash, also when the system is in dark mode.
+- [ ] All six choices are visible at once, without scrolling, in phone and
+      tablet portrait and landscape, and stay clear of notches, rounded
+      corners, and system bars.
 - [ ] Choices are large, do not overlap, and respond across their full visible area.
 - [ ] One tap immediately shows the configured phrase and a border/checkmark on
       the selected choice; confirmation does not cover another choice.
@@ -21,13 +26,30 @@ orientation for each session. Do not record private information in the repositor
       and replaces speech rather than building a speech queue.
 - [ ] Each configured phrase is understandable through the device speaker at the
       intended environment's volume. Also check muted and low-volume behavior.
+- [ ] On iPhone/iPad, speech remains audible with the ring/silent switch (or
+      silent mode) on, and other audio briefly lowers rather than stopping.
+- [ ] The first choice after launch is spoken without a noticeably longer delay
+      than later choices.
+- [ ] Each accepted choice gives one light haptic tap on devices that support it
+      (with system touch feedback on); a rapid repeat gives no extra tap. The
+      board works the same with vibration or touch feedback turned off.
 - [ ] The visual action remains usable when speech is unavailable or interrupted.
+- [ ] Selecting a choice and immediately leaving CareBridge (home, app switcher,
+      lock) stops speech. Returning shows the same selection and does not
+      replay or resume the old phrase. A phone call or notification shade
+      alone does not change the selection.
 - [ ] At the largest practical accessibility text setting, choices remain reachable
       and important text remains understandable without layout errors.
 - [ ] With TalkBack on Android or VoiceOver on Apple devices, each choice is
       announced as an enabled button with its label, phrase hint, and selected state.
+      Note whether the screen reader's announcement of the confirmation overlaps
+      or talks over the spoken phrase.
 - [ ] Selection requires no swipe, long-press, hover, or other gesture-only action.
 - [ ] Reduced-motion settings do not add unnecessary motion.
+- [ ] Note whether edge swipes (Android back gesture, iOS home indicator) or
+      the back button cause accidental exits during use. CareBridge does not
+      block them; Android app pinning or iOS Guided Access can hold the app
+      on screen during a session if caregivers choose to use them.
 
 ## Caregiver-observed usability
 
