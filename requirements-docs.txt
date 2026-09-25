@@ -1,0 +1,4 @@
+# Documentation site tooling only. The Flutter app does not use these.
+# Install with: python -m pip install -r requirements-docs.txt
+mkdocs==1.6.1
+mkdocs-material==9.7.7
