@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/fake_speech_service.dart';
+import '../support/fake_tactile_feedback.dart';
 
 void main() {
   test('disabled choices cannot communicate', () async {
@@ -113,5 +114,71 @@ void main() {
     expect(await controller.activate(help), isTrue);
     expect(controller.selectedChoice, help);
     expect(controller.sessionEvents.single.choiceId, 'help');
+  });
+
+  CommunicationChoice choiceWithId(String id) => sampleCommunicator
+      .enabledChoices
+      .singleWhere((choice) => choice.id == id);
+
+  test('accepted activation gives one tactile acknowledgment', () async {
+    var time = DateTime.utc(2026, 9, 20);
+    final haptics = FakeTactileFeedback();
+    final controller = CommunicationBoardController(
+      speechService: FakeSpeechService(),
+      tactileFeedback: haptics,
+      now: () => time,
+    );
+
+    expect(await controller.activate(choiceWithId('food')), isTrue);
+    expect(haptics.acknowledgements, 1);
+
+    time = time.add(const Duration(milliseconds: 100));
+    expect(await controller.activate(choiceWithId('food')), isFalse);
+    expect(haptics.acknowledgements, 1, reason: 'ignored duplicate');
+
+    expect(await controller.activate(choiceWithId('drink')), isTrue);
+    expect(haptics.acknowledgements, 2);
+  });
+
+  for (final synchronous in [true, false]) {
+    test('tactile failure (${synchronous ? 'sync' : 'async'}) never '
+        'affects communication or speech', () async {
+      final speech = FakeSpeechService();
+      final haptics = FakeTactileFeedback()
+        ..error = StateError('no vibrator')
+        ..throwSynchronously = synchronous;
+      final controller = CommunicationBoardController(
+        speechService: speech,
+        tactileFeedback: haptics,
+      );
+
+      expect(await controller.activate(choiceWithId('help')), isTrue);
+      expect(controller.selectedChoice?.id, 'help');
+      expect(controller.sessionEvents.single.choiceId, 'help');
+      expect(speech.spokenPhrases, ['I need help.']);
+    });
+  }
+
+  test('stopping speech keeps the communicated choice', () async {
+    final speech = FakeSpeechService();
+    final controller = CommunicationBoardController(speechService: speech);
+    await controller.activate(choiceWithId('rest'));
+
+    speech.error = StateError('engine gone');
+    await controller.stopSpeech();
+
+    expect(speech.stopCount, 1);
+    expect(controller.selectedChoice?.id, 'rest');
+    expect(controller.sessionEvents, hasLength(1));
+  });
+
+  test('a disposed controller ignores activation', () async {
+    final speech = FakeSpeechService();
+    final controller = CommunicationBoardController(speechService: speech)
+      ..dispose();
+
+    expect(await controller.activate(choiceWithId('food')), isFalse);
+    expect(speech.spokenPhrases, isEmpty);
+    expect(controller.sessionEvents, isEmpty);
   });
 }
