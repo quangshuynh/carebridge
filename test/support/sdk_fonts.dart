@@ -14,9 +14,23 @@ Future<void> loadSdkFonts() async {
       !Directory('${directory.path}/artifacts/material_fonts').existsSync()) {
     directory = directory.parent;
   }
-  final fonts = '${directory.path}/artifacts/material_fonts';
-  Future<ByteData> read(String file) async =>
-      ByteData.sublistView(await File('$fonts/$file').readAsBytes());
+  final fonts = Directory('${directory.path}/artifacts/material_fonts');
+  final available = fonts.existsSync()
+      ? fonts.listSync().whereType<File>().toList()
+      : <File>[];
+  // Match names case-insensitively; letter case differs between hosts.
+  Future<ByteData> read(String name) async {
+    for (final file in available) {
+      if (file.uri.pathSegments.last.toLowerCase() == name) {
+        return ByteData.sublistView(await file.readAsBytes());
+      }
+    }
+    throw StateError(
+      'Font $name not found in ${fonts.path}; found '
+      '${available.map((file) => file.uri.pathSegments.last).toList()}',
+    );
+  }
+
   final roboto = FontLoader('Roboto');
   for (final file in [
     'roboto-regular.ttf',
