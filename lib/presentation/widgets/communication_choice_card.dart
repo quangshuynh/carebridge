@@ -1,6 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../domain/communication_models.dart';
+import '../care_bridge_theme.dart';
+import 'fitted_text.dart';
 
 class CommunicationChoiceCard extends StatelessWidget {
   const CommunicationChoiceCard({
@@ -24,76 +28,101 @@ class CommunicationChoiceCard extends StatelessWidget {
     excludeSemantics: true,
     child: Material(
       color: choice.visual.backgroundColor,
-      elevation: isSelected ? 8 : 1,
+      // Selection appears at once rather than easing in.
+      animationDuration: Duration.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
         side: BorderSide(
-          color: isSelected ? const Color(0xFF173A37) : const Color(0x40173A37),
-          width: isSelected ? 5 : 2,
+          color: isSelected
+              ? CareBridgeColors.outline
+              : CareBridgeColors.outline.withAlpha(0x33),
+          width: isSelected ? 6 : 2,
         ),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         key: Key('choice-${choice.id}'),
         onTap: choice.isEnabled ? onActivate : null,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: Icon(
-                          choice.visual.icon,
-                          color: const Color(0xFF173A37),
-                          size: 96,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      choice.label,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            color: const Color(0xFF102B29),
-                            fontWeight: FontWeight.w800,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final extent = constraints.biggest.shortestSide;
+            final padding = (extent * 0.08).clamp(10.0, 24.0);
+            final innerHeight = constraints.maxHeight - padding * 2;
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: Padding(
+                    padding: EdgeInsets.all(padding),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, area) => Center(
+                              child: Icon(
+                                choice.visual.icon,
+                                color: CareBridgeColors.outline,
+                                size: math.min(
+                                  area.maxHeight,
+                                  area.maxWidth * 0.62,
+                                ),
+                              ),
+                            ),
                           ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (isSelected)
-              const Positioned(
-                right: 10,
-                top: 10,
-                child: ExcludeSemantics(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Color(0xFF173A37),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.all(5),
-                      child: Icon(
-                        Icons.check_rounded,
-                        key: Key('selected-check'),
-                        color: Colors.white,
-                        size: 26,
-                      ),
+                        ),
+                        SizedBox(height: padding * 0.5),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight: innerHeight * 0.45,
+                          ),
+                          child: FittedText(
+                            choice.label,
+                            style: TextStyle(
+                              color: CareBridgeColors.ink,
+                              fontSize: (extent * 0.15).clamp(22.0, 40.0),
+                              fontWeight: FontWeight.w800,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
-          ],
+                if (isSelected)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: _SelectedBadge(
+                      size: (extent * 0.2).clamp(34.0, 52.0),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
+      ),
+    ),
+  );
+}
+
+class _SelectedBadge extends StatelessWidget {
+  const _SelectedBadge({required this.size});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        color: CareBridgeColors.outline,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.check_rounded,
+        key: const Key('selected-check'),
+        color: Colors.white,
+        size: size * 0.72,
       ),
     ),
   );

@@ -46,7 +46,7 @@ const sampleCommunicator = CommunicatorProfile(
           label: 'Help',
           spokenPhrase: 'I need help.',
           visual: ChoiceVisual.icon(
-            Icons.pan_tool_alt_rounded,
+            Icons.front_hand_rounded,
             backgroundColor: Color(0xFFFFC8C2),
           ),
           order: 3,
@@ -56,7 +56,7 @@ const sampleCommunicator = CommunicatorProfile(
           label: 'Rest',
           spokenPhrase: 'I need to rest.',
           visual: ChoiceVisual.icon(
-            Icons.bedtime_rounded,
+            Icons.hotel_rounded,
             backgroundColor: Color(0xFFDCD0F2),
           ),
           order: 4,
@@ -66,7 +66,7 @@ const sampleCommunicator = CommunicatorProfile(
           label: 'Finished',
           spokenPhrase: 'I am finished.',
           visual: ChoiceVisual.icon(
-            Icons.check_circle_rounded,
+            Icons.sports_score_rounded,
             backgroundColor: Color(0xFFD5DAD8),
           ),
           order: 5,
