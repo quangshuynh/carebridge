@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Matches the board background so launch never flashes another color. -->
+    <color name="launch_background">#F5F7F4</color>
+</resources>
