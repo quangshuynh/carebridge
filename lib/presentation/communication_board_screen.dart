@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../application/communication_board_controller.dart';
 import '../domain/communication_models.dart';
+import 'board_grid_layout.dart';
 import 'widgets/communication_choice_card.dart';
+import 'widgets/communication_confirmation.dart';
 
-class CommunicationBoardScreen extends StatefulWidget {
+class CommunicationBoardScreen extends StatelessWidget {
   const CommunicationBoardScreen({
     required this.profile,
     required this.controller,
@@ -13,90 +16,43 @@ class CommunicationBoardScreen extends StatefulWidget {
   final CommunicatorProfile profile;
   final CommunicationBoardController controller;
 
-  @override
-  State<CommunicationBoardScreen> createState() =>
-      _CommunicationBoardScreenState();
-}
-
-class _CommunicationBoardScreenState extends State<CommunicationBoardScreen> {
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.addListener(_refresh);
-  }
-
-  @override
-  void didUpdateWidget(CommunicationBoardScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.controller != widget.controller) {
-      oldWidget.controller.removeListener(_refresh);
-      widget.controller.addListener(_refresh);
-    }
-  }
-
-  void _refresh() => setState(() {});
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_refresh);
-    widget.controller.dispose();
-    super.dispose();
-  }
+  /// Below this height a landscape screen moves confirmation beside the
+  /// board, leaving the full height for the choices.
+  static const sidePanelMaxHeight = 560.0;
 
   @override
   Widget build(BuildContext context) {
-    final choices = widget.profile.enabledChoices;
-    final selected = widget.controller.selectedChoice;
-    final size = MediaQuery.sizeOf(context);
-    final isTablet = size.shortestSide >= 600;
-    final isPhoneLandscape = size.width > size.height;
-    final columnCount = isTablet || isPhoneLandscape ? 3 : 2;
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1100),
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                isTablet ? 32 : 16,
-                16,
-                isTablet ? 32 : 16,
-                20,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    widget.profile.displayName,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF173A37),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _ConfirmationBanner(choice: selected),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: GridView.builder(
-                      key: const Key('communication-grid'),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columnCount,
-                        crossAxisSpacing: isTablet ? 20 : 12,
-                        mainAxisSpacing: isTablet ? 20 : 12,
-                        childAspectRatio: isTablet ? 1.18 : 0.92,
+    final isTablet = MediaQuery.sizeOf(context).shortestSide >= 600;
+    final gutter = isTablet ? 24.0 : 16.0;
+    final spacing = isTablet ? 20.0 : 12.0;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: Padding(
+                padding: EdgeInsets.all(gutter),
+                child: ListenableBuilder(
+                  listenable: controller,
+                  builder: (context, _) => LayoutBuilder(
+                    builder: (context, constraints) => _BoardLayout(
+                      area: constraints.biggest,
+                      spacing: spacing,
+                      confirmation: (direction) => CommunicationConfirmation(
+                        choice: controller.selectedChoice,
+                        direction: direction,
                       ),
-                      itemCount: choices.length,
-                      itemBuilder: (context, index) {
-                        final choice = choices[index];
-                        return CommunicationChoiceCard(
-                          choice: choice,
-                          isSelected: choice.id == selected?.id,
-                          onActivate: () => widget.controller.activate(choice),
-                        );
-                      },
+                      grid: _ChoiceGrid(
+                        choices: profile.enabledChoices,
+                        selectedId: controller.selectedChoice?.id,
+                        spacing: spacing,
+                        onActivate: controller.activate,
+                      ),
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -106,55 +62,98 @@ class _CommunicationBoardScreenState extends State<CommunicationBoardScreen> {
   }
 }
 
-class _ConfirmationBanner extends StatelessWidget {
-  const _ConfirmationBanner({required this.choice});
-  final CommunicationChoice? choice;
+/// Places the confirmation above the board, or beside it when a landscape
+/// screen is short, at a size that never depends on the phrase shown.
+class _BoardLayout extends StatelessWidget {
+  const _BoardLayout({
+    required this.area,
+    required this.spacing,
+    required this.confirmation,
+    required this.grid,
+  });
+  final Size area;
+  final double spacing;
+  final Widget Function(Axis direction) confirmation;
+  final Widget grid;
 
   @override
   Widget build(BuildContext context) {
-    final phrase = choice?.spokenPhrase ?? 'Choose what you want to say';
-    return Semantics(
-      liveRegion: choice != null,
-      label: choice == null ? phrase : 'Selected. $phrase',
-      child: AnimatedContainer(
-        key: const Key('confirmation-banner'),
-        duration: MediaQuery.disableAnimationsOf(context)
-            ? Duration.zero
-            : const Duration(milliseconds: 180),
-        constraints: const BoxConstraints(minHeight: 72),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        decoration: BoxDecoration(
-          color: choice == null ? Colors.white : const Color(0xFF245D58),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFF245D58), width: 2),
+    final useSidePanel =
+        area.width > area.height &&
+        area.height < CommunicationBoardScreen.sidePanelMaxHeight;
+    if (useSidePanel) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: (area.width * 0.28).clamp(140.0, 280.0),
+            child: confirmation(Axis.vertical),
+          ),
+          SizedBox(width: spacing),
+          Expanded(child: grid),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: (area.height * 0.14).clamp(80.0, 136.0),
+          child: confirmation(Axis.horizontal),
         ),
-        child: Row(
-          children: [
-            Icon(
-              choice == null
-                  ? Icons.touch_app_rounded
-                  : Icons.volume_up_rounded,
-              color: choice == null ? const Color(0xFF245D58) : Colors.white,
-              size: 32,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                phrase,
-                key: const Key('confirmation-phrase'),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: choice == null
-                      ? const Color(0xFF173A37)
-                      : Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+        SizedBox(height: spacing),
+        Expanded(child: grid),
+      ],
     );
   }
+}
+
+class _ChoiceGrid extends StatelessWidget {
+  const _ChoiceGrid({
+    required this.choices,
+    required this.selectedId,
+    required this.spacing,
+    required this.onActivate,
+  });
+  final List<CommunicationChoice> choices;
+  final String? selectedId;
+  final double spacing;
+  final void Function(CommunicationChoice choice) onActivate;
+
+  static const minCellExtent = 110.0;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final layout = BoardGridLayout.resolve(
+        itemCount: choices.length,
+        area: constraints.biggest,
+        spacing: spacing,
+        minCellExtent: minCellExtent,
+      );
+      return GridView.builder(
+        key: const Key('communication-grid'),
+        padding: EdgeInsets.zero,
+        // A board that fits never scrolls, so a drag cannot shift targets.
+        physics: layout.scrolls
+            ? const ClampingScrollPhysics()
+            : const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: layout.columns,
+          crossAxisSpacing: spacing,
+          mainAxisSpacing: spacing,
+          mainAxisExtent: layout.cellSize.height,
+        ),
+        itemCount: choices.length,
+        itemBuilder: (context, index) {
+          final choice = choices[index];
+          return CommunicationChoiceCard(
+            choice: choice,
+            isSelected: choice.id == selectedId,
+            onActivate: () => onActivate(choice),
+          );
+        },
+      );
+    },
+  );
 }
