@@ -1,4 +1,5 @@
-"""Regenerates CareBridge app icons and launch images from the repository logo.
+"""Regenerates CareBridge app icons, launch images, and the documentation
+site's logo from the repository logo.
 
 Source: docs/images/carebridge0-logo.png (the CareBridge logo on white).
 Only the figure mark is used; the wordmark and tagline are not legible at
@@ -25,6 +26,8 @@ ANDROID_RES = Path("android/app/src/main/res")
 ANDROID_DENSITIES = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
 IOS_ICONS = Path("ios/Runner/Assets.xcassets/AppIcon.appiconset")
 IOS_LAUNCH = Path("ios/Runner/Assets.xcassets/LaunchImage.imageset")
+# Logo and favicon for the documentation site.
+DOCS_MARK = Path("docs/images/carebridge-mark.png")
 
 
 def transparent_mark() -> Image.Image:
@@ -88,6 +91,8 @@ def main() -> None:
         place(mark, 120 * factor, 1.0, (0, 0, 0, 0)).save(
             IOS_LAUNCH / f"LaunchImage{suffix}.png", optimize=True
         )
+
+    place(mark, 256, 1.0, (0, 0, 0, 0)).save(DOCS_MARK, optimize=True)
 
 
 if __name__ == "__main__":

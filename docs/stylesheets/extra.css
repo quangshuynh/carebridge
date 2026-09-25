@@ -1,0 +1,59 @@
+/* CareBridge colors, matching lib/presentation/care_bridge_theme.dart. */
+:root {
+  --md-primary-fg-color: #245d58;
+  --md-primary-fg-color--light: #3a7c76;
+  --md-primary-fg-color--dark: #173a37;
+  --md-accent-fg-color: #1f7a70;
+}
+
+[data-md-color-scheme="default"] {
+  --md-default-bg-color: #fbfcfb;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-hue: 175;
+  --md-accent-fg-color: #7fd1c6;
+  --md-typeset-a-color: #8fd8ce;
+}
+
+.md-header__button.md-logo img {
+  height: 1.8rem;
+}
+
+/* Home page introduction. */
+.cb-hero {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.cb-hero img {
+  width: 132px;
+}
+
+.cb-hero p {
+  font-size: 1.05rem;
+  max-width: 36rem;
+  margin: 0.5rem auto 0;
+}
+
+/* Screenshots sit side by side and wrap on narrow screens. */
+.cb-screens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.cb-screens figure {
+  margin: 0;
+}
+
+.cb-screens img {
+  max-height: 380px;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  border-radius: 0.6rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+}

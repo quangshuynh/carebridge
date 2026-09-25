@@ -13,3 +13,4 @@
 - Use owned or safely licensed visuals. Never invent missing user information.
 - Test domain behavior, interaction, duplicate activation, semantics, and phone/tablet layouts.
 - Do not weaken checks to make CI pass. Document device-only verification still outstanding.
+- Detailed product and developer documentation belongs in the MkDocs site under `docs/`. Keep README a concise landing page that links there, and keep `mkdocs build --strict` passing.

@@ -1,0 +1,82 @@
+site_name: CareBridge
+site_description: >-
+  A local-first communication board that helps nonverbal people express
+  everyday wants and needs through large visual choices and spoken phrases.
+site_url: https://quangshuynh.github.io/carebridge/
+repo_url: https://github.com/quangshuynh/carebridge
+repo_name: quangshuynh/carebridge
+edit_uri: edit/main/docs/
+copyright: CareBridge is licensed under the Apache License 2.0.
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Communicator board: communicator-board.md
+  - Accessibility: accessibility.md
+  - Privacy: privacy.md
+  - Architecture: architecture.md
+  - Device validation: device-validation.md
+  - Contributing: contributing.md
+
+theme:
+  name: material
+  logo: images/carebridge-mark.png
+  favicon: images/carebridge-mark.png
+  icon:
+    repo: material/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark theme
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light theme
+  features:
+    - content.action.edit
+    - content.code.copy
+    - navigation.footer
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - toc.follow
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
