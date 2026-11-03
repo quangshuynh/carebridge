@@ -32,6 +32,8 @@ dependencies:
     sdk: flutter
   # On-device text-to-speech through the platform's own speech engine.
   flutter_tts: ^4.2.5
+  # On-device storage for display preferences such as high contrast.
+  shared_preferences: ^2.5.6
 
 dev_dependencies:
   flutter_test:

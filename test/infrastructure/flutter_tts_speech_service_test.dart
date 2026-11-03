@@ -9,6 +9,7 @@ class _RecordingTts implements FlutterTts {
   final calls = <String>[];
   Completer<void>? pendingLanguage;
   bool failConfiguration = false;
+  bool failStop = false;
 
   @override
   Future<dynamic> setLanguage(String language) async {
@@ -33,7 +34,10 @@ class _RecordingTts implements FlutterTts {
   }
 
   @override
-  Future<dynamic> stop() async => calls.add('stop');
+  Future<dynamic> stop() async {
+    calls.add('stop');
+    if (failStop) throw StateError('engine busy');
+  }
 
   @override
   Future<dynamic> speak(String text, {bool focus = false}) async =>
@@ -95,5 +99,36 @@ void main() {
     await service.speak('I need to rest.');
 
     expect(tts.calls.last, 'speak I need to rest.');
+  });
+
+  test(
+    'an engine that fails to interrupt still speaks the new phrase',
+    () async {
+      final tts = _RecordingTts()..failStop = true;
+      final service = FlutterTtsSpeechService(flutterTts: tts);
+
+      await service.speak('I need help.');
+      await service.speak('I am finished.');
+
+      expect(tts.calls.where((call) => call.startsWith('speak')), [
+        'speak I need help.',
+        'speak I am finished.',
+      ]);
+    },
+  );
+
+  test('a stop during configuration keeps a newer phrase only', () async {
+    final tts = _RecordingTts()..pendingLanguage = Completer<void>();
+    final service = FlutterTtsSpeechService(flutterTts: tts);
+
+    final dropped = service.speak('I would like a drink.');
+    await service.stop();
+    final kept = service.speak('I need to rest.');
+    tts.pendingLanguage!.complete();
+    await Future.wait([dropped, kept]);
+
+    expect(tts.calls.where((call) => call.startsWith('speak')), [
+      'speak I need to rest.',
+    ]);
   });
 }

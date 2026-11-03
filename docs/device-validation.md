@@ -59,6 +59,17 @@ Record the device model, operating system version, CareBridge commit, date, and 
 - [ ] Note whether the screen reader's announcement of the confirmation overlaps the spoken phrase.
 - [ ] Reduced-motion settings do not add unnecessary motion.
 
+### High contrast and settings
+
+- [ ] Tapping or briefly pressing the settings button does nothing. Holding it for about one second opens settings.
+- [ ] With TalkBack or VoiceOver, double-tap and hold on "Settings" opens settings.
+- [ ] Turning on High contrast changes the board at once. Text, icons, and borders are clearly darker, and the selected choice is still obvious in bright light and glare.
+- [ ] High contrast is still on after force-closing and reopening CareBridge, and after a device restart.
+- [ ] On iPhone and iPad, turning on Settings, Accessibility, Display & Text Size, Increase Contrast switches CareBridge to high contrast.
+- [ ] On Android 14 or later, note which system contrast setting (if any) switches CareBridge to high contrast.
+- [ ] Opening settings while a phrase is speaking stops it. Returning shows the same selection and does not replay the phrase.
+- [ ] With a Bluetooth keyboard or switch access, a focus ring is clearly visible on the focused choice.
+
 ## Caregiver observations
 
 Observe the interaction. Do not coach toward a preferred result or guess at a cause.

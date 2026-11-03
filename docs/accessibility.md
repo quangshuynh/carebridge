@@ -31,7 +31,26 @@ The current icons are standard Material icons used as placeholders. They have no
 
 ## Contrast
 
-Labels and icons use a near-black ink on light pastel backgrounds, a contrast ratio of at least 10:1 for every sample choice. The selected confirmation uses white text on dark teal, about 7.5:1. Both exceed the WCAG AAA threshold of 7:1 for normal text. These ratios are calculated from the colors in the source code. Screen brightness, glare, and a person's vision still affect what is visible in practice.
+Labels and icons use a near-black ink on light pastel backgrounds, a contrast ratio of at least 10:1 for every sample choice. The selected confirmation uses white text on dark teal, about 7.5:1. Both exceed the WCAG AAA threshold of 7:1 for normal text. These ratios are calculated from the colors in the source code, and a test fails if they drop. Screen brightness, glare, and a person's vision still affect what is visible in practice.
+
+### High contrast
+
+<figure markdown>
+![The board in high contrast on a phone with Drink selected](images/screenshots/phone-portrait-high-contrast.png){ width="260" }
+</figure>
+
+High contrast makes text, icons, and every border pure black, thickens the borders (3 pixels unselected, 8 selected), and shows the selected confirmation as white on black. Each choice keeps its own background color so choices stay easy to tell apart, and selection still shows as a heavier border plus a check badge, not by color alone. Black text and icons are at least 14:1 against every sample choice color.
+
+High contrast turns on in either of two ways:
+
+- **The CareBridge setting.** Hold the round settings button beside the confirmation area for one second, then turn on **High contrast**. The setting is saved on the device and applies again after the app restarts.
+- **The device.** When the system asks apps for more contrast, CareBridge uses high contrast regardless of its own setting. Flutter reports this request from iOS and iPadOS (**Increase Contrast**) and from Android 14 and later. On older Android versions, use the CareBridge setting.
+
+Changing contrast takes effect at once, with no fade, and never changes the choices, phrases, speech, or current selection.
+
+## Focus
+
+When a keyboard or switch moves focus to a choice, a thick ring appears inside its border. The ring is a different shape from the selected border and check, so focus and selection are never confused. Touch does not show the ring.
 
 ## Text scaling
 
@@ -44,12 +63,14 @@ Widget tests check that every choice stays visible at 1x, 2x, and 3x text scale 
 - Each choice is announced as an enabled button with its label, a hint of the form "Says: I would like a drink.", and its selected state.
 - The check badge is hidden from screen readers because the selected state already conveys it.
 - The confirmation is a live region once something is selected. It announces "Selected." followed by the phrase. Before any selection it reads "Choose what you want to say".
+- The settings button is announced as "Settings" with a long-press action only. Screen-reader users open it with the reader's own long-press gesture (double-tap and hold).
+- The High contrast switch announces its name and on or off state. The state is also written beside it as "On" or "Off".
 
 With TalkBack or VoiceOver on, the screen reader's announcement and CareBridge's own speech may overlap. How this sounds on real devices has not been checked yet.
 
 ## Motion
 
-Selection appears instantly with no easing. The only animation is a 150 millisecond color change on the confirmation area, which is removed entirely when the system asks apps to reduce or disable animations.
+Selection appears instantly with no easing. The only animation is a 150 millisecond color change on the confirmation area, which is removed entirely when the system asks apps to reduce or disable animations. This is the same in high contrast.
 
 ## Orientation and screen size
 
