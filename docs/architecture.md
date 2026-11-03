@@ -18,9 +18,9 @@ flowchart TD
 | Folder | Role |
 | --- | --- |
 | `lib/domain/` | Plain data: profiles, categories, choices, visuals, events, and display preferences. |
-| `lib/application/` | The controller that owns interaction state. |
+| `lib/application/` | Controllers for interaction, display preferences, choices, and backup. |
 | `lib/presentation/` | Widgets, layout, and theme. |
-| `lib/services/` | Interfaces for speech, tactile feedback, and preference storage. |
+| `lib/services/` | Interfaces for speech, tactile feedback, backup files, and preference and choice storage. |
 | `lib/infrastructure/` | Platform implementations of those interfaces. |
 
 ## Domain data
@@ -33,9 +33,24 @@ Everything the board shows is data, not widget state:
 - `ChoiceVisual` currently holds an icon and a background color.
 - `CommunicationEvent` records a choice id, its phrase, and when it occurred.
 
-The board shows `enabledChoices`: the enabled choices of enabled categories. Categories appear in list order, and choices within a category are sorted by their `order`. The six sample choices are defined in `lib/domain/sample_board.dart` as a single category.
+The board shows `enabledChoices`: the enabled choices of enabled categories. Categories appear in list order, and choices within a category are sorted by their `order`.
 
-Keeping this as data leaves room for future caregiver customization without changing how the board works.
+## Caregiver choices
+
+The caregiver's board is domain data in `lib/domain/board_choices.dart`:
+
+- `BoardChoice` is one choice as configured: a permanent id, label, spoken phrase, icon id, color id, and visibility.
+- `BoardChoices` is the ordered list. Every operation (`withAdded`, `withEdited`, `withVisibility`, `withMoved`) returns a new, fully validated board or throws `BoardChoicesException`. `toProfile()` turns it into the `CommunicatorProfile` the board shows; hidden choices become disabled choices. `toJson` and `fromJson` are the strict encoding shared by storage and backups.
+- `BoardText` holds the text rules (normalizing, length, control characters) shared by the form, storage, and import.
+- `ChoiceVisualCatalog` (`choice_visual_catalog.dart`) maps stable icon and color ids to bundled icons and colors.
+
+`BoardChoices.original` is the six built-in choices and matches `sampleCommunicator` in `sample_board.dart`; a test keeps them identical.
+
+`BoardChoicesController` (application) owns the current board. It shows the original board at once, loads the saved board in the background, and refuses changes until loading finishes, so an early edit can never overwrite saved choices. Each change is saved through the `BoardChoicesStore` service first and shown only once saved. Unreadable saved data leaves the original board in place and sets `loadFailed`. `SharedPreferencesBoardChoicesStore` keeps the whole board as one JSON value under one key.
+
+`CareBridgeApp` listens to the controller and calls `CommunicationBoardController.retainSelectionIn`, which clears the selection when the selected choice changed or was hidden. Passing a fixed `profile` to `CareBridgeApp` (used by some tests) shows that board instead and leaves editing and backup out.
+
+The editor screens are in `lib/presentation/choices/`: `ChoicesEditorScreen` lists choices, `ChoiceDetailScreen` reorders, hides, and shows one, and `ChoiceFormScreen` adds or edits one. See [Customizing choices](customizing-choices.md).
 
 ## Controller
 
@@ -67,7 +82,7 @@ Failures in speech or haptics are caught and ignored, so they cannot undo or del
 
 ## Backup
 
-`BoardBackupFormat` (domain) encodes settings as versioned JSON and validates a whole file before returning a `BoardBackup`. `BoardBackupController` (application) runs export and import through the `BackupFiles` service, implemented by `FilePickerBackupFiles` with the system file dialogs. An import is applied with `DisplayPreferencesController.replaceWith`, which saves first and changes the display only once saved. `BackupSettingsSection` shows the actions, confirmation, and results in settings. See [Backup and restore](backup.md).
+`BoardBackupFormat` (domain) encodes settings and choices as versioned JSON and validates a whole file before returning a `BoardBackup`. Version 1 files decode with no board. `BoardBackupController` (application) runs export and import through the `BackupFiles` service, implemented by `FilePickerBackupFiles` with the system file dialogs. An import saves the board with `BoardChoicesController.persist`, then the settings with `DisplayPreferencesController.replaceWith`, saves the previous board back if the settings fail, and only then shows the new board with `adopt`. `BackupSettingsSection` shows the actions, confirmation, and results in settings. See [Backup and restore](backup.md).
 
 ## Speech boundary
 
@@ -87,4 +102,4 @@ Failures in speech or haptics are caught and ignored, so they cannot undo or del
 
 ## Tests
 
-Tests live in `test/` and mirror these layers. Fakes for speech, tactile feedback, and preference storage are in `test/support/`. The tests cover domain ordering and enabled state, duplicate activation through touch and screen-reader actions with a fake clock, speech and haptic failures, speech replacement, navigation and lifecycle behavior, high contrast and its persistence, contrast ratios, semantics, offline operation, and phone and tablet layouts at several text scales.
+Tests live in `test/` and mirror these layers. Fakes for speech, tactile feedback, backup files, and preference and choice storage are in `test/support/`. The tests cover domain ordering and enabled state, custom choices (adding, editing, hiding, reordering, restoring, limits, stable ids, corrupted storage, failed and interrupted saves), backup versions and atomic import, duplicate activation through touch and screen-reader actions with a fake clock, speech and haptic failures, speech replacement, navigation and lifecycle behavior, high contrast and its persistence, contrast ratios, semantics, offline operation, and phone and tablet layouts at several text scales.

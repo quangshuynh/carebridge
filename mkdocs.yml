@@ -12,6 +12,7 @@ nav:
   - Home: index.md
   - Getting started: getting-started.md
   - Communicator board: communicator-board.md
+  - Customizing choices: customizing-choices.md
   - Accessibility: accessibility.md
   - Privacy: privacy.md
   - Backup and restore: backup.md

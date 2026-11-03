@@ -59,6 +59,19 @@ Record the device model, operating system version, CareBridge commit, date, and 
 - [ ] Note whether the screen reader's announcement of the confirmation overlaps the spoken phrase.
 - [ ] Reduced-motion settings do not add unnecessary motion.
 
+### Custom choices
+
+- [ ] Edit choices is reachable only from settings; nothing on the board starts editing.
+- [ ] Adding a choice with the on-screen keyboard works in portrait and landscape, and the keyboard does not hide the field being typed in.
+- [ ] A changed spoken phrase is what the device speaks; the button's words stay as set.
+- [ ] Pressing Move earlier or Move later repeatedly never lands on a different button.
+- [ ] Hidden choices disappear from the board and come back in the same place.
+- [ ] Custom choices survive force-closing, a device restart, rotating, and leaving and returning to the app.
+- [ ] Restore original six choices asks first and then shows exactly the original board.
+- [ ] With TalkBack and VoiceOver, rows, picture and color options, reorder buttons, and result messages are announced, and reordering works.
+- [ ] With a Bluetooth keyboard or switch access, focus stays on Move earlier or Move later after each move.
+- [ ] At the largest text size on a small phone, every editor page is usable.
+
 ### High contrast and settings
 
 - [ ] Tapping or briefly pressing the settings button does nothing. Holding it for about one second opens settings.
@@ -72,7 +85,9 @@ Record the device model, operating system version, CareBridge commit, date, and 
 - [ ] Export board backup opens the system save dialog, saves `carebridge-backup-YYYY-MM-DD.json`, and shows "Backup saved". Cancelling shows "Export cancelled".
 - [ ] Exporting works in airplane mode to a local folder.
 - [ ] Importing that file on a second device shows the confirmation and, after Replace settings, turns on high contrast that survives a restart.
-- [ ] Importing a non-JSON file, an edited file, and a file with `"schemaVersion": 2` each shows a clear message and changes nothing.
+- [ ] Importing a non-JSON file, an edited file, and a file with `"schemaVersion": 3` each shows a clear message and changes nothing.
+- [ ] A backup with custom choices restores the same words, phrases, pictures, order, and hidden choices on a second device.
+- [ ] A version 1 backup (made before custom choices) imports its settings and leaves custom choices unchanged.
 - [ ] With TalkBack or VoiceOver, the backup buttons, confirmation, and result messages are announced.
 - [ ] The merged release Android manifest requests no new permissions.
 - [ ] On Android 14 or later, note which system contrast setting (if any) switches CareBridge to high contrast.
