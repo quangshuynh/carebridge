@@ -32,9 +32,10 @@ CareBridge is an early-stage, local-first communication app. It helps nonverbal 
 - Shows six large sample choices: Food, Drink, Drive, Help, Rest, and Finished.
 - One tap marks the choice, shows its picture and phrase, speaks the phrase with the device's text-to-speech, and gives a light haptic tap.
 - Keeps every choice visible and in place on phones and tablets, in portrait and landscape.
+- Offers a high-contrast display, saved on the device, behind a deliberate one-second hold so it cannot be opened by accident.
 - Works offline with no account. CareBridge has no cloud service, analytics, or advertising.
 
-The six choices are demo content. Personalization, caregiver editing, and saved data are not built yet.
+The six choices are demo content. Personalization and caregiver editing are not built yet, and the high-contrast setting is the only thing saved.
 
 CareBridge is not a medical device, diagnostic tool, or treatment, and it does not replace professional AAC assessment. A selection communicates only its configured phrase.
 

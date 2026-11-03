@@ -17,10 +17,10 @@ flowchart TD
 
 | Folder | Role |
 | --- | --- |
-| `lib/domain/` | Plain data: profiles, categories, choices, visuals, and events. |
+| `lib/domain/` | Plain data: profiles, categories, choices, visuals, events, and display preferences. |
 | `lib/application/` | The controller that owns interaction state. |
 | `lib/presentation/` | Widgets, layout, and theme. |
-| `lib/services/` | Interfaces for speech and tactile feedback. |
+| `lib/services/` | Interfaces for speech, tactile feedback, and preference storage. |
 | `lib/infrastructure/` | Platform implementations of those interfaces. |
 
 ## Domain data
@@ -41,7 +41,7 @@ Keeping this as data leaves room for future caregiver customization without chan
 
 `CommunicationBoardController` is a `ChangeNotifier` that owns the current selection and the session's events. When a choice is activated it:
 
-1. ignores disabled choices and same-choice repeats within the 600 millisecond window,
+1. ignores disabled choices and same-choice repeats within the 600 millisecond window (a clock that moved backwards never counts as a repeat, and `stopSpeech()` ends the window),
 2. updates the selection, records an event, and notifies listeners so the visual confirmation renders,
 3. starts the haptic acknowledgment without waiting for it,
 4. asks the speech service to speak the phrase.
@@ -57,6 +57,14 @@ Failures in speech or haptics are caught and ignored, so they cannot undo or del
 - `CommunicationConfirmation` renders the fixed-size confirmation area.
 - `FittedText` sizes text to the user's text scale, then shrinks it to fit without splitting words.
 
+## Display preferences
+
+`DisplayPreferencesController` owns the high-contrast preference. It loads saved preferences in the background, so the board never waits for storage, and a change made while loading wins over the loaded value. A change applies at once and is then saved through the `DisplayPreferencesStore` interface, implemented by `SharedPreferencesDisplayPreferencesStore`. Storage failures leave the board working with the preference held in memory.
+
+`CareBridgeApp` builds the theme from the preference. The colors and stroke widths the board draws with live in `CareBridgePalette`, a theme extension with a standard and a high-contrast variant. The high-contrast theme is also given to `MaterialApp` as `highContrastTheme`, so the device's own contrast request applies it too.
+
+`SettingsScreen` is opened from the board's `SettingsHoldButton` after a one-second hold. Opening it calls `stopSpeech()`.
+
 ## Speech boundary
 
 `SpeechService` is a two-method interface: `speak` replaces any current or pending speech, and `stop` discards it.
@@ -69,10 +77,10 @@ Failures in speech or haptics are caught and ignored, so they cannot undo or del
 
 ## Lifecycle handling
 
-`CareBridgeApp` creates the controller and registers an `AppLifecycleListener`. When the app is hidden, it calls `stopSpeech()`, which stops speech without changing the selection.
+`CareBridgeApp` creates the controllers and registers an `AppLifecycleListener`. When the app is hidden, it calls `stopSpeech()`, which stops speech and ends the duplicate window without changing the selection.
 
 `main.dart` awaits nothing before the first frame. Speech configures itself on first use, so the board never waits for a voice.
 
 ## Tests
 
-Tests live in `test/` and mirror these layers. Fakes for speech and tactile feedback are in `test/support/`. The tests cover domain ordering and enabled state, duplicate activation, speech and haptic failures, speech replacement, lifecycle behavior, semantics, and phone and tablet layouts at several text scales.
+Tests live in `test/` and mirror these layers. Fakes for speech, tactile feedback, and preference storage are in `test/support/`. The tests cover domain ordering and enabled state, duplicate activation through touch and screen-reader actions with a fake clock, speech and haptic failures, speech replacement, navigation and lifecycle behavior, high contrast and its persistence, contrast ratios, semantics, offline operation, and phone and tablet layouts at several text scales.
