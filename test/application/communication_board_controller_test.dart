@@ -181,4 +181,123 @@ void main() {
     expect(speech.spokenPhrases, isEmpty);
     expect(controller.sessionEvents, isEmpty);
   });
+
+  group('duplicate activation policy', () {
+    test(
+      'a wall clock moved backwards never blocks a deliberate repeat',
+      () async {
+        var time = DateTime.utc(2026, 9, 20, 12);
+        final speech = FakeSpeechService();
+        final controller = CommunicationBoardController(
+          speechService: speech,
+          now: () => time,
+        );
+        expect(await controller.activate(choiceWithId('help')), isTrue);
+
+        // For example, an automatic network time correction.
+        time = time.subtract(const Duration(hours: 1));
+        expect(await controller.activate(choiceWithId('help')), isTrue);
+        expect(speech.spokenPhrases, ['I need help.', 'I need help.']);
+      },
+    );
+
+    test('leaving the board ends the duplicate window', () async {
+      final time = DateTime.utc(2026, 9, 20);
+      final speech = FakeSpeechService();
+      final controller = CommunicationBoardController(
+        speechService: speech,
+        now: () => time,
+      );
+      expect(await controller.activate(choiceWithId('help')), isTrue);
+      expect(await controller.activate(choiceWithId('help')), isFalse);
+
+      await controller.stopSpeech();
+
+      expect(await controller.activate(choiceWithId('help')), isTrue);
+      expect(controller.sessionEvents, hasLength(2));
+    });
+
+    test('speech that never finishes does not block a later repeat', () async {
+      var time = DateTime.utc(2026, 9, 20);
+      final speech = FakeSpeechService()..pendingSpeech = Completer<void>();
+      final controller = CommunicationBoardController(
+        speechService: speech,
+        now: () => time,
+      );
+      unawaited(controller.activate(choiceWithId('drink')));
+
+      time = time.add(const Duration(milliseconds: 599));
+      // An ignored duplicate answers at once even while speech is pending.
+      expect(await controller.activate(choiceWithId('drink')), isFalse);
+      time = time.add(const Duration(milliseconds: 1));
+      unawaited(controller.activate(choiceWithId('drink')));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(speech.spokenPhrases, [
+        'I would like a drink.',
+        'I would like a drink.',
+      ]);
+      expect(controller.sessionEvents, hasLength(2));
+    });
+
+    test('a failed phrase can be repeated after the window', () async {
+      var time = DateTime.utc(2026, 9, 20);
+      final speech = FakeSpeechService()..error = StateError('engine busy');
+      final controller = CommunicationBoardController(
+        speechService: speech,
+        now: () => time,
+      );
+      expect(await controller.activate(choiceWithId('help')), isTrue);
+      speech.error = null;
+      time = time.add(const Duration(milliseconds: 600));
+
+      expect(await controller.activate(choiceWithId('help')), isTrue);
+      expect(speech.spokenPhrases, ['I need help.', 'I need help.']);
+    });
+
+    test('a quick switch back to the first choice is accepted', () async {
+      final time = DateTime.utc(2026, 9, 20);
+      final speech = FakeSpeechService();
+      final controller = CommunicationBoardController(
+        speechService: speech,
+        now: () => time,
+      );
+      for (final id in ['food', 'drink', 'food']) {
+        expect(await controller.activate(choiceWithId(id)), isTrue, reason: id);
+      }
+      expect(controller.selectedChoice?.id, 'food');
+      expect(speech.spokenPhrases, hasLength(3));
+    });
+  });
+
+  test('earlier speech finishing late changes nothing on the board', () async {
+    final first = Completer<void>();
+    final speech = FakeSpeechService()..pendingSpeech = first;
+    final controller = CommunicationBoardController(speechService: speech);
+    final drive = controller.activate(choiceWithId('drive'));
+    speech.pendingSpeech = null;
+    await controller.activate(choiceWithId('help'));
+
+    var notifications = 0;
+    controller.addListener(() => notifications++);
+    first.complete();
+    expect(await drive, isTrue);
+
+    expect(notifications, 0);
+    expect(controller.selectedChoice?.id, 'help');
+    expect(controller.sessionEvents.map((event) => event.choiceId), [
+      'drive',
+      'help',
+    ]);
+  });
+
+  test('speech finishing after dispose is harmless', () async {
+    final pending = Completer<void>();
+    final speech = FakeSpeechService()..pendingSpeech = pending;
+    final controller = CommunicationBoardController(speechService: speech);
+    final activation = controller.activate(choiceWithId('rest'));
+    controller.dispose();
+    pending.complete();
+    expect(await activation, isTrue);
+  });
 }

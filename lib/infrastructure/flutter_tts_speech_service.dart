@@ -16,7 +16,9 @@ class FlutterTtsSpeechService implements SpeechService {
     // A newer communication or a stop supersedes this one; never speak a
     // stale phrase late or queue it behind the newer one.
     if (request != _latestRequest) return;
-    await _flutterTts.stop();
+    // Interrupting the previous phrase is best effort: an engine that fails
+    // to stop must not drop the new communication.
+    await _attempt(_flutterTts.stop);
     if (request != _latestRequest) return;
     await _flutterTts.speak(phrase);
   }
