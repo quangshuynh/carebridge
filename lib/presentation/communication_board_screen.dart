@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../application/board_backup_controller.dart';
 import '../application/communication_board_controller.dart';
 import '../application/display_preferences_controller.dart';
 import '../domain/communication_models.dart';
@@ -15,11 +16,15 @@ class CommunicationBoardScreen extends StatelessWidget {
     required this.profile,
     required this.controller,
     required this.displayPreferences,
+    this.backup,
     super.key,
   });
   final CommunicatorProfile profile;
   final CommunicationBoardController controller;
   final DisplayPreferencesController displayPreferences;
+
+  /// Export and import in settings. Null leaves them out.
+  final BoardBackupController? backup;
 
   /// Below this height a landscape screen moves confirmation beside the
   /// board, leaving the full height for the choices.
@@ -31,9 +36,11 @@ class CommunicationBoardScreen extends StatelessWidget {
   Future<void> _openSettings(BuildContext context) async {
     if (ModalRoute.of(context)?.isCurrent == false) return;
     controller.stopSpeech();
+    backup?.clearOutcome();
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) => SettingsScreen(preferences: displayPreferences),
+        builder: (context) =>
+            SettingsScreen(preferences: displayPreferences, backup: backup),
       ),
     );
   }

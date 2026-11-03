@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # The system's own save and open dialogs for caregiver backup files.
+  file_picker: ^13.3.2
   # On-device text-to-speech through the platform's own speech engine.
   flutter_tts: ^4.2.5
   # On-device storage for display preferences such as high contrast.

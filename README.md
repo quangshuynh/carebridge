@@ -33,6 +33,7 @@ CareBridge is an early-stage, local-first communication app. It helps nonverbal 
 - One tap marks the choice, shows its picture and phrase, speaks the phrase with the device's text-to-speech, and gives a light haptic tap.
 - Keeps every choice visible and in place on phones and tablets, in portrait and landscape.
 - Offers a high-contrast display, saved on the device, behind a deliberate one-second hold so it cannot be opened by accident.
+- Lets caregivers export settings to a local file and import them on another device, with a confirmation before anything is replaced.
 - Works offline with no account. CareBridge has no cloud service, analytics, or advertising.
 
 The six choices are demo content. Personalization and caregiver editing are not built yet, and the high-contrast setting is the only thing saved.
@@ -61,6 +62,7 @@ The full documentation is at **[quangshuynh.github.io/carebridge](https://quangs
 
 - [Communicator board](https://quangshuynh.github.io/carebridge/communicator-board/): exact interaction behavior
 - [Accessibility](https://quangshuynh.github.io/carebridge/accessibility/) and [Privacy](https://quangshuynh.github.io/carebridge/privacy/)
+- [Backup and restore](https://quangshuynh.github.io/carebridge/backup/): what a backup contains and its file format
 - [Architecture](https://quangshuynh.github.io/carebridge/architecture/)
 - [Device validation](https://quangshuynh.github.io/carebridge/device-validation/) checklist
 

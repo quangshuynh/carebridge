@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'application/board_backup_controller.dart';
 import 'application/communication_board_controller.dart';
 import 'application/display_preferences_controller.dart';
 import 'domain/communication_models.dart';
 import 'domain/sample_board.dart';
 import 'presentation/care_bridge_theme.dart';
 import 'presentation/communication_board_screen.dart';
+import 'services/backup_files.dart';
 import 'services/display_preferences_store.dart';
 import 'services/speech_service.dart';
 import 'services/tactile_feedback.dart';
@@ -15,6 +17,7 @@ class CareBridgeApp extends StatefulWidget {
     required this.speechService,
     this.tactileFeedback,
     this.displayPreferencesStore,
+    this.backupFiles,
     this.profile = sampleCommunicator,
     this.now,
     super.key,
@@ -24,6 +27,10 @@ class CareBridgeApp extends StatefulWidget {
 
   /// Where display preferences are kept. Null keeps them in memory only.
   final DisplayPreferencesStore? displayPreferencesStore;
+
+  /// Where caregivers save and open backups. Null leaves backup out of
+  /// settings.
+  final BackupFiles? backupFiles;
   final CommunicatorProfile profile;
 
   /// The clock for communication events and the duplicate window; tests
@@ -43,6 +50,14 @@ class _CareBridgeAppState extends State<CareBridgeApp> {
       );
   late final DisplayPreferencesController _displayPreferences =
       DisplayPreferencesController(store: widget.displayPreferencesStore);
+  late final BoardBackupController? _backup = switch (widget.backupFiles) {
+    final files? => BoardBackupController(
+      files: files,
+      preferences: _displayPreferences,
+      now: widget.now,
+    ),
+    null => null,
+  };
 
   // Speech stops when CareBridge leaves the screen so it cannot resume or
   // play late after returning. What was communicated stays selected.
@@ -60,6 +75,7 @@ class _CareBridgeAppState extends State<CareBridgeApp> {
   void dispose() {
     _lifecycle.dispose();
     _controller.dispose();
+    _backup?.dispose();
     _displayPreferences.dispose();
     super.dispose();
   }
@@ -82,6 +98,7 @@ class _CareBridgeAppState extends State<CareBridgeApp> {
         profile: widget.profile,
         controller: _controller,
         displayPreferences: _displayPreferences,
+        backup: _backup,
       ),
     ),
   );

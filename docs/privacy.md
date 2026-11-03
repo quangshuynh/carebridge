@@ -11,6 +11,7 @@ CareBridge is designed so that communication stays on the device and works witho
 | Is there analytics, tracking, or advertising? | No. |
 | Is anything synced to a cloud service? | No. |
 | Is anything saved between sessions? | Only the high-contrast display setting, on the device. |
+| Can settings be moved to another device? | Only by a file the caregiver exports and imports. See [Backup and restore](backup.md). |
 | Can speech involve the network? | That depends on the device's speech engine. See [Text-to-speech](#text-to-speech). |
 
 ## Local-first design
@@ -28,6 +29,10 @@ Durable local storage of communication is deliberately deferred until its data l
 ## Display settings
 
 The high-contrast setting is the only thing CareBridge saves. It is stored on the device with [`shared_preferences`](https://pub.dev/packages/shared_preferences) (SharedPreferences on Android, UserDefaults on iOS) and is never sent anywhere by CareBridge. Like other app data, it may be included in the device's own backups if the person has turned those on.
+
+## Backup files
+
+A caregiver can export settings to a file and import it elsewhere. The file holds only the high-contrast setting, with no identifiers, history, or medical information, and is saved or opened only where the caregiver chooses in the system's file dialog. See [Backup and restore](backup.md).
 
 ## Network access
 

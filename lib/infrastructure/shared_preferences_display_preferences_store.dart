@@ -26,6 +26,10 @@ class SharedPreferencesDisplayPreferencesStore
   @override
   Future<void> save(DisplayPreferences preferences) async {
     final stored = await _preferences();
-    await stored.setBool(highContrastKey, preferences.highContrast);
+    final saved = await stored.setBool(
+      highContrastKey,
+      preferences.highContrast,
+    );
+    if (!saved) throw StateError('Display preferences were not saved.');
   }
 }

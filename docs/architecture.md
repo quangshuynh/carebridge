@@ -65,6 +65,10 @@ Failures in speech or haptics are caught and ignored, so they cannot undo or del
 
 `SettingsScreen` is opened from the board's `SettingsHoldButton` after a one-second hold. Opening it calls `stopSpeech()`.
 
+## Backup
+
+`BoardBackupFormat` (domain) encodes settings as versioned JSON and validates a whole file before returning a `BoardBackup`. `BoardBackupController` (application) runs export and import through the `BackupFiles` service, implemented by `FilePickerBackupFiles` with the system file dialogs. An import is applied with `DisplayPreferencesController.replaceWith`, which saves first and changes the display only once saved. `BackupSettingsSection` shows the actions, confirmation, and results in settings. See [Backup and restore](backup.md).
+
 ## Speech boundary
 
 `SpeechService` is a two-method interface: `speak` replaces any current or pending speech, and `stop` discards it.

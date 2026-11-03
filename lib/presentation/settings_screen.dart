@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../application/board_backup_controller.dart';
 import '../application/display_preferences_controller.dart';
+import 'backup_settings_section.dart';
 import 'care_bridge_theme.dart';
 
 /// Caregiver-facing display settings, reached from the board by a
 /// deliberate hold. Changes apply at once and are kept on the device.
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({required this.preferences, super.key});
+  const SettingsScreen({required this.preferences, this.backup, super.key});
   final DisplayPreferencesController preferences;
+
+  /// Export and import. Null hides the backup section.
+  final BoardBackupController? backup;
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +73,14 @@ class SettingsScreen extends StatelessWidget {
                     icon: const Icon(Icons.arrow_back_rounded, size: 32),
                     label: const Text('Back to board'),
                   ),
+                  // Last, so its messages never move the controls above.
+                  if (backup case final backup?) ...[
+                    const SizedBox(height: 48),
+                    BackupSettingsSection(
+                      controller: backup,
+                      textStyle: textStyle,
+                    ),
+                  ],
                 ],
               ),
             ),
