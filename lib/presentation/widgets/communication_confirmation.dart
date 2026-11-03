@@ -30,6 +30,7 @@ class CommunicationConfirmation extends StatelessWidget {
     final selected = choice;
     final phrase = selected?.spokenPhrase ?? idlePhrase;
     final isHorizontal = direction == Axis.horizontal;
+    final palette = CareBridgePalette.of(context);
     return Semantics(
       container: true,
       liveRegion: selected != null,
@@ -42,11 +43,12 @@ class CommunicationConfirmation extends StatelessWidget {
             : const Duration(milliseconds: 150),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: selected == null
-              ? CareBridgeColors.surface
-              : CareBridgeColors.brand,
+          color: selected == null ? palette.surface : palette.selectedSurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: CareBridgeColors.brand, width: 2),
+          border: Border.all(
+            color: palette.confirmationBorder,
+            width: palette.confirmationBorderWidth,
+          ),
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -66,8 +68,8 @@ class CommunicationConfirmation extends StatelessWidget {
               textAlign: isHorizontal ? TextAlign.start : TextAlign.center,
               style: TextStyle(
                 color: selected == null
-                    ? CareBridgeColors.ink
-                    : CareBridgeColors.surface,
+                    ? palette.ink
+                    : palette.onSelectedSurface,
                 fontSize: selected == null ? phraseSize * 0.85 : phraseSize,
                 fontWeight: selected == null
                     ? FontWeight.w600
@@ -116,17 +118,28 @@ class _ConfirmationVisual extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = choice;
+    final palette = CareBridgePalette.of(context);
     return Container(
       key: const Key('confirmation-visual'),
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: selected?.visual.backgroundColor ?? CareBridgeColors.idleVisual,
+        color: selected?.visual.backgroundColor ?? palette.idleVisual,
         borderRadius: BorderRadius.circular(size * 0.22),
+        // High contrast outlines the picture so it stands apart from both the
+        // white idle area and the black selected area.
+        border: palette.isHighContrast
+            ? Border.all(
+                color: selected == null
+                    ? palette.outline
+                    : palette.onSelectedSurface,
+                width: 2,
+              )
+            : null,
       ),
       child: Icon(
         selected?.visual.icon ?? Icons.touch_app_rounded,
-        color: CareBridgeColors.outline,
+        color: palette.outline,
         size: size * 0.66,
       ),
     );

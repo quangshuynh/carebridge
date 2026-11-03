@@ -2,23 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../application/communication_board_controller.dart';
+import '../application/display_preferences_controller.dart';
 import '../domain/communication_models.dart';
 import 'board_grid_layout.dart';
+import 'settings_screen.dart';
 import 'widgets/communication_choice_card.dart';
 import 'widgets/communication_confirmation.dart';
+import 'widgets/settings_hold_button.dart';
 
 class CommunicationBoardScreen extends StatelessWidget {
   const CommunicationBoardScreen({
     required this.profile,
     required this.controller,
+    required this.displayPreferences,
     super.key,
   });
   final CommunicatorProfile profile;
   final CommunicationBoardController controller;
+  final DisplayPreferencesController displayPreferences;
 
   /// Below this height a landscape screen moves confirmation beside the
   /// board, leaving the full height for the choices.
   static const sidePanelMaxHeight = 560.0;
+
+  /// Leaving the board stops speech, like leaving the app, so a phrase never
+  /// plays over settings or late after returning. The selection is kept.
+  /// A repeated request while settings is already opening is ignored.
+  Future<void> _openSettings(BuildContext context) async {
+    if (ModalRoute.of(context)?.isCurrent == false) return;
+    controller.stopSpeech();
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => SettingsScreen(preferences: displayPreferences),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +62,9 @@ class CommunicationBoardScreen extends StatelessWidget {
                         choice: controller.selectedChoice,
                         direction: direction,
                       ),
+                      settings: SettingsHoldButton(
+                        onOpen: () => _openSettings(context),
+                      ),
                       grid: _ChoiceGrid(
                         choices: profile.enabledChoices,
                         selectedId: controller.selectedChoice?.id,
@@ -63,17 +84,21 @@ class CommunicationBoardScreen extends StatelessWidget {
 }
 
 /// Places the confirmation above the board, or beside it when a landscape
-/// screen is short, at a size that never depends on the phrase shown.
+/// screen is short, at a size that never depends on the phrase shown. The
+/// settings button sits at the end of the confirmation band, away from the
+/// choices.
 class _BoardLayout extends StatelessWidget {
   const _BoardLayout({
     required this.area,
     required this.spacing,
     required this.confirmation,
+    required this.settings,
     required this.grid,
   });
   final Size area;
   final double spacing;
   final Widget Function(Axis direction) confirmation;
+  final Widget settings;
   final Widget grid;
 
   @override
@@ -87,7 +112,14 @@ class _BoardLayout extends StatelessWidget {
         children: [
           SizedBox(
             width: (area.width * 0.28).clamp(140.0, 280.0),
-            child: confirmation(Axis.vertical),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: confirmation(Axis.vertical)),
+                SizedBox(height: spacing),
+                Center(child: settings),
+              ],
+            ),
           ),
           SizedBox(width: spacing),
           Expanded(child: grid),
@@ -99,7 +131,14 @@ class _BoardLayout extends StatelessWidget {
       children: [
         SizedBox(
           height: (area.height * 0.14).clamp(80.0, 136.0),
-          child: confirmation(Axis.horizontal),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: confirmation(Axis.horizontal)),
+              SizedBox(width: spacing),
+              Center(child: settings),
+            ],
+          ),
         ),
         SizedBox(height: spacing),
         Expanded(child: grid),

@@ -11,6 +11,8 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:carebridge/app.dart';
+import 'package:carebridge/domain/display_preferences.dart';
+import 'package:carebridge/services/display_preferences_store.dart';
 import 'package:carebridge/services/speech_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -24,18 +26,41 @@ void main() {
   setUpAll(loadSdkFonts);
 
   for (final shot in [
-    (name: 'phone-portrait-initial', size: const Size(390, 844), tap: null),
-    (name: 'phone-portrait-selected', size: const Size(390, 844), tap: 'drink'),
-    (name: 'phone-landscape-selected', size: const Size(844, 390), tap: 'help'),
+    (
+      name: 'phone-portrait-initial',
+      size: const Size(390, 844),
+      tap: null,
+      highContrast: false,
+    ),
+    (
+      name: 'phone-portrait-selected',
+      size: const Size(390, 844),
+      tap: 'drink',
+      highContrast: false,
+    ),
+    (
+      name: 'phone-portrait-high-contrast',
+      size: const Size(390, 844),
+      tap: 'drink',
+      highContrast: true,
+    ),
+    (
+      name: 'phone-landscape-selected',
+      size: const Size(844, 390),
+      tap: 'help',
+      highContrast: false,
+    ),
     (
       name: 'tablet-portrait-selected',
       size: const Size(820, 1180),
       tap: 'rest',
+      highContrast: false,
     ),
     (
       name: 'tablet-landscape-selected',
       size: const Size(1180, 820),
       tap: 'food',
+      highContrast: false,
     ),
   ]) {
     testWidgets(shot.name, (tester) async {
@@ -45,11 +70,17 @@ void main() {
       addTearDown(tester.view.reset);
       const boundaryKey = Key('screenshot');
       await tester.pumpWidget(
-        const RepaintBoundary(
+        RepaintBoundary(
           key: boundaryKey,
-          child: CareBridgeApp(speechService: _SilentSpeech()),
+          child: CareBridgeApp(
+            speechService: const _SilentSpeech(),
+            displayPreferencesStore: _FixedPreferences(
+              DisplayPreferences(highContrast: shot.highContrast),
+            ),
+          ),
         ),
       );
+      await tester.pump();
       if (shot.tap != null) {
         await tester.tap(find.byKey(Key('choice-${shot.tap}')));
       }
@@ -75,4 +106,13 @@ class _SilentSpeech implements SpeechService {
   Future<void> speak(String phrase) async {}
   @override
   Future<void> stop() async {}
+}
+
+class _FixedPreferences implements DisplayPreferencesStore {
+  const _FixedPreferences(this.preferences);
+  final DisplayPreferences preferences;
+  @override
+  Future<DisplayPreferences?> load() async => preferences;
+  @override
+  Future<void> save(DisplayPreferences preferences) async {}
 }
