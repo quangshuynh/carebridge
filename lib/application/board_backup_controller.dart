@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../domain/board_backup.dart';
 import '../services/backup_files.dart';
+import 'board_choices_controller.dart';
 import 'display_preferences_controller.dart';
 
 /// The result of the latest backup action, shown to the caregiver.
@@ -22,17 +23,20 @@ enum BackupOutcome {
   importFailed,
 }
 
-/// Exports and imports caregiver settings as a local file the caregiver
-/// handles themselves. Import replaces settings only after the whole file is
-/// valid, the caregiver confirms, and the new settings are saved.
+/// Exports and imports caregiver settings and the board's choices as a
+/// local file the caregiver handles themselves. Import replaces them only
+/// after the whole file is valid, the caregiver confirms, and everything new
+/// is saved.
 class BoardBackupController extends ChangeNotifier {
   BoardBackupController({
     required this.files,
     required this.preferences,
+    required this.choices,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
   final BackupFiles files;
   final DisplayPreferencesController preferences;
+  final BoardChoicesController choices;
   final DateTime Function() _now;
 
   bool _isBusy = false;
@@ -50,9 +54,11 @@ class BoardBackupController extends ChangeNotifier {
   /// [BackupOutcome.importRejected].
   BoardBackupProblem? get problem => _problem;
 
-  /// The current settings as a backup.
-  BoardBackup get current =>
-      BoardBackup(displayPreferences: preferences.preferences);
+  /// The current settings and choices as a backup.
+  BoardBackup get current => BoardBackup(
+    displayPreferences: preferences.preferences,
+    board: choices.board,
+  );
 
   /// Forgets the last outcome, for example when settings are opened again.
   void clearOutcome() {
@@ -66,9 +72,9 @@ class BoardBackupController extends ChangeNotifier {
   /// changes the settings. Returns false when ignored as a repeat.
   Future<bool> export() async {
     if (!_begin()) return false;
-    final bytes = BoardBackupFormat.encodeBytes(current);
     BackupOutcome outcome;
     try {
+      final bytes = BoardBackupFormat.encodeBytes(current);
       final saved = await files.save(
         fileName: BoardBackupFormat.fileNameFor(_now()),
         bytes: bytes,
@@ -106,12 +112,28 @@ class BoardBackupController extends ChangeNotifier {
     }
   }
 
-  /// Replaces the current settings with [backup] once they are saved. If
-  /// saving fails, the previous settings stay in place and in storage.
+  /// Replaces the current settings and choices with [backup] once all of
+  /// it is saved. The board is saved first; if the settings then fail to
+  /// save, the previous board is saved back. Nothing on screen changes until
+  /// both are saved. A version 1 backup has no choices and leaves the board
+  /// as it is.
   Future<void> applyImport(BoardBackup backup) async {
     if (!_isBusy || _isDisposed) return;
+    final board = backup.board;
+    final previousBoard = choices.board;
     try {
-      await preferences.replaceWith(backup.displayPreferences);
+      if (board != null) await choices.persist(board);
+      try {
+        await preferences.replaceWith(backup.displayPreferences);
+      } catch (_) {
+        if (board != null) {
+          try {
+            await choices.persist(previousBoard);
+          } catch (_) {}
+        }
+        rethrow;
+      }
+      if (board != null) choices.adopt(board);
       _finish(BackupOutcome.imported);
     } catch (_) {
       _finish(BackupOutcome.importFailed);

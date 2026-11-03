@@ -53,6 +53,20 @@ class CommunicationChoice {
   final ChoiceVisual visual;
   final int order;
   final bool isEnabled;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CommunicationChoice &&
+      other.id == id &&
+      other.label == label &&
+      other.spokenPhrase == spokenPhrase &&
+      other.visual == visual &&
+      other.order == order &&
+      other.isEnabled == isEnabled;
+
+  @override
+  int get hashCode =>
+      Object.hash(id, label, spokenPhrase, visual, order, isEnabled);
 }
 
 @immutable
@@ -60,6 +74,15 @@ class ChoiceVisual {
   const ChoiceVisual.icon(this.icon, {required this.backgroundColor});
   final IconData icon;
   final Color backgroundColor;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ChoiceVisual &&
+      other.icon == icon &&
+      other.backgroundColor == backgroundColor;
+
+  @override
+  int get hashCode => Object.hash(icon, backgroundColor);
 }
 
 @immutable

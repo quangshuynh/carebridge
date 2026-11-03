@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../application/board_backup_controller.dart';
 import '../domain/board_backup.dart';
+import '../domain/board_choices.dart';
 import '../domain/display_preferences.dart';
 import 'care_bridge_theme.dart';
 
@@ -20,7 +21,7 @@ String backupOutcomeMessage(
       return 'The backup could not be saved there. Try another place. '
           'Your settings are unchanged.';
     case BackupOutcome.imported:
-      return 'Backup imported. Your settings were replaced.';
+      return 'Backup imported. Your settings and choices were replaced.';
     case BackupOutcome.importCancelled:
       return 'Import cancelled. Nothing was changed.';
     case BackupOutcome.importUnreadable:
@@ -103,9 +104,8 @@ class BackupSettingsSection extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Save these settings to a file you keep, or replace them '
-              'from a CareBridge backup file. The built-in choices on the '
-              'board are not part of a backup and always stay.',
+              'Save these settings and the choices on the board to a file '
+              'you keep, or replace them from a CareBridge backup file.',
               style: bodyStyle,
             ),
             const SizedBox(height: 16),
@@ -238,6 +238,13 @@ class ImportConfirmationDialog extends StatelessWidget {
 
   static String _onOff(bool value) => value ? 'On' : 'Off';
 
+  static String _choicesSummary(BoardChoices board) {
+    final shown = board.choices.where((choice) => choice.isVisible);
+    final hidden = board.choices.length - shown.length;
+    return '${shown.map((choice) => choice.label).join(', ')}'
+        '${hidden == 0 ? '' : ' ($hidden hidden)'}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = CareBridgePalette.of(context);
@@ -285,10 +292,25 @@ class ImportConfirmationDialog extends StatelessWidget {
               style: bodyStyle.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 16),
-            Text(
-              'The built-in choices on the board stay the same.',
-              style: bodyStyle,
-            ),
+            if (incoming.board case final board?) ...[
+              Text(
+                'Choices after import: ${_choicesSummary(board)}.',
+                key: const Key('import-summary-choices'),
+                style: bodyStyle.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'They replace the choices on the board now: '
+                '${_choicesSummary(current.board!)}.',
+                style: bodyStyle,
+              ),
+            ] else
+              Text(
+                'This older backup has no choices, so the choices on the '
+                'board stay the same.',
+                key: const Key('import-summary-choices'),
+                style: bodyStyle,
+              ),
             const SizedBox(height: 24),
             OutlinedButton(
               key: const Key('import-cancel'),

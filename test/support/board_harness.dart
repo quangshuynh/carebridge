@@ -1,11 +1,11 @@
 import 'package:carebridge/app.dart';
 import 'package:carebridge/application/communication_board_controller.dart';
 import 'package:carebridge/domain/communication_models.dart';
-import 'package:carebridge/domain/sample_board.dart';
 import 'package:carebridge/presentation/care_bridge_theme.dart';
 import 'package:carebridge/presentation/communication_board_screen.dart';
 import 'package:carebridge/presentation/widgets/settings_hold_button.dart';
 import 'package:carebridge/services/backup_files.dart';
+import 'package:carebridge/services/board_choices_store.dart';
 import 'package:carebridge/services/display_preferences_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,7 +22,8 @@ Future<void> pumpCareBridge(
   FakeTactileFeedback? haptics,
   DisplayPreferencesStore? store,
   BackupFiles? backupFiles,
-  CommunicatorProfile profile = sampleCommunicator,
+  CommunicatorProfile? profile,
+  BoardChoicesStore? boardStore,
   DateTime Function()? now,
   bool systemHighContrast = false,
   bool disableAnimations = false,
@@ -45,6 +46,7 @@ Future<void> pumpCareBridge(
       displayPreferencesStore: store,
       backupFiles: backupFiles,
       profile: profile,
+      boardChoicesStore: boardStore,
       now: now,
     ),
   );
@@ -55,7 +57,9 @@ Future<void> pumpCareBridge(
 Finder choiceFinder(String id) => find.byKey(Key('choice-$id'));
 
 CommunicationBoardController boardController(WidgetTester tester) => tester
-    .widget<CommunicationBoardScreen>(find.byType(CommunicationBoardScreen))
+    .widget<CommunicationBoardScreen>(
+      find.byType(CommunicationBoardScreen, skipOffstage: false),
+    )
     .controller;
 
 CareBridgePalette paletteOnBoard(WidgetTester tester) =>
