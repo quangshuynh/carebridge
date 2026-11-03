@@ -6,19 +6,27 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:carebridge/application/board_backup_controller.dart';
+import 'package:carebridge/application/board_choices_controller.dart';
 import 'package:carebridge/application/display_preferences_controller.dart';
 import 'package:carebridge/domain/board_backup.dart';
+import 'package:carebridge/domain/board_choices.dart';
 import 'package:carebridge/domain/display_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/fake_backup_files.dart';
+import '../support/fake_board_choices_store.dart';
 import '../support/fake_display_preferences_store.dart';
 
 const _on = DisplayPreferences(highContrast: true);
 const _off = DisplayPreferences(highContrast: false);
 
 Uint8List _backupBytes(DisplayPreferences preferences) =>
-    BoardBackupFormat.encodeBytes(BoardBackup(displayPreferences: preferences));
+    BoardBackupFormat.encodeBytes(
+      BoardBackup(
+        displayPreferences: preferences,
+        board: BoardChoices.original,
+      ),
+    );
 
 void main() {
   late FakeDisplayPreferencesStore store;
@@ -35,6 +43,7 @@ void main() {
     backup = BoardBackupController(
       files: files,
       preferences: preferences,
+      choices: BoardChoicesController(),
       now: () => DateTime(2026, 11, 3, 9),
     );
     notifications = 0;
@@ -59,7 +68,9 @@ void main() {
       expect(files.savedNames, ['carebridge-backup-2026-11-03.json']);
       expect(
         utf8.decode(files.savedFiles.single),
-        BoardBackupFormat.encode(const BoardBackup(displayPreferences: _on)),
+        BoardBackupFormat.encode(
+          BoardBackup(displayPreferences: _on, board: BoardChoices.original),
+        ),
       );
       expectUnchanged(_on);
     });
@@ -107,7 +118,10 @@ void main() {
       files.fileToOpen = _backupBytes(_on);
       final chosen = await backup.chooseImport();
 
-      expect(chosen, const BoardBackup(displayPreferences: _on));
+      expect(
+        chosen,
+        BoardBackup(displayPreferences: _on, board: BoardChoices.original),
+      );
       // Nothing changes until the caregiver confirms.
       expect(backup.isBusy, isTrue);
       expectUnchanged(_off);
@@ -149,7 +163,7 @@ void main() {
       ),
       'a future version': (
         utf8.encode(
-          '{"format": "carebridge.board-backup", "schemaVersion": 2, '
+          '{"format": "carebridge.board-backup", "schemaVersion": 3, '
           '"settings": {"highContrast": true}}',
         ),
         BoardBackupProblem.newerVersion,
@@ -220,7 +234,11 @@ void main() {
       store = FakeDisplayPreferencesStore(_off)..pendingLoad = Completer();
       preferences = DisplayPreferencesController(store: store);
       final loading = preferences.load();
-      backup = BoardBackupController(files: files, preferences: preferences);
+      backup = BoardBackupController(
+        files: files,
+        preferences: preferences,
+        choices: BoardChoicesController(),
+      );
       files.fileToOpen = _backupBytes(_on);
       await backup.applyImport((await backup.chooseImport())!);
       store.pendingLoad!.complete();
@@ -247,6 +265,7 @@ void main() {
       await BoardBackupController(
         files: diskFiles,
         preferences: source,
+        choices: BoardChoicesController(),
         now: () => DateTime(2026, 1, 2),
       ).export();
 
@@ -260,6 +279,7 @@ void main() {
       final restore = BoardBackupController(
         files: diskFiles..chosen = exported,
         preferences: target,
+        choices: BoardChoicesController(),
       );
       await restore.applyImport((await restore.chooseImport())!);
 
@@ -276,6 +296,7 @@ void main() {
       final controller = BoardBackupController(
         files: diskFiles..failWrite = true,
         preferences: DisplayPreferencesController(),
+        choices: BoardChoicesController(),
       );
       await controller.export();
       expect(controller.outcome, BackupOutcome.exportFailed);
@@ -288,9 +309,163 @@ void main() {
       final controller = BoardBackupController(
         files: diskFiles..chosen = huge,
         preferences: DisplayPreferencesController(),
+        choices: BoardChoicesController(),
       );
       expect(await controller.chooseImport(), isNull);
       expect(controller.problem, BoardBackupProblem.tooLarge);
+    });
+  });
+
+  group('choices', () {
+    const snack = ChoiceDraft(
+      label: 'Snack',
+      spokenPhrase: 'Snack, please.',
+      iconId: 'cookie',
+      colorId: 'yellow',
+    );
+    late FakeBoardChoicesStore boardStore;
+    late BoardChoicesController choices;
+    late BoardChoices customBoard;
+
+    setUp(() async {
+      store = FakeDisplayPreferencesStore(_off);
+      preferences = DisplayPreferencesController(store: store);
+      await preferences.load();
+      boardStore = FakeBoardChoicesStore();
+      choices = BoardChoicesController(store: boardStore);
+      await choices.load();
+      files = FakeBackupFiles();
+      backup = BoardBackupController(
+        files: files,
+        preferences: preferences,
+        choices: choices,
+      );
+      customBoard = BoardChoices.original
+          .withAdded(snack)
+          .withMoved('custom-1', -6)
+          .withVisibility('drive', visible: false);
+    });
+
+    Uint8List backupWith(BoardChoices board, DisplayPreferences settings) =>
+        BoardBackupFormat.encodeBytes(
+          BoardBackup(displayPreferences: settings, board: board),
+        );
+
+    test('export includes the customized board exactly', () async {
+      await choices.add(snack);
+      await choices.setVisible('help', visible: false);
+      await backup.export();
+      expect(
+        BoardBackupFormat.decode(files.savedFiles.single).board,
+        choices.board,
+      );
+      await backup.export();
+      expect(files.savedFiles[0], files.savedFiles[1]);
+    });
+
+    test('import replaces settings and choices together, with ids and order '
+        'intact', () async {
+      files.fileToOpen = backupWith(customBoard, _on);
+      await backup.applyImport((await backup.chooseImport())!);
+
+      expect(backup.outcome, BackupOutcome.imported);
+      expect(choices.board, customBoard);
+      expect(boardStore.saved, customBoard);
+      expect(preferences.preferences, _on);
+      expect(choices.profile.enabledChoices.map((c) => c.id).toList(), [
+        'custom-1',
+        'food',
+        'drink',
+        'help',
+        'rest',
+        'finished',
+      ]);
+    });
+
+    test('a version 1 backup replaces settings and leaves custom choices '
+        'alone', () async {
+      await choices.add(snack);
+      final before = choices.board;
+      files.fileToOpen = Uint8List.fromList(
+        utf8.encode(
+          '{"format": "carebridge.board-backup", "schemaVersion": 1, '
+          '"settings": {"highContrast": true}}',
+        ),
+      );
+      await backup.applyImport((await backup.chooseImport())!);
+      expect(backup.outcome, BackupOutcome.imported);
+      expect(preferences.preferences, _on);
+      expect(choices.board, before);
+      expect(boardStore.saved, before);
+    });
+
+    test('a backup with duplicate choice ids is rejected and nothing '
+        'changes', () async {
+      final duplicated = jsonDecode(
+        utf8.decode(backupWith(BoardChoices.original, _on)),
+      ) as Map<String, dynamic>;
+      final list = duplicated['board']['choices'] as List<dynamic>;
+      list.add(Map<String, dynamic>.of(list.first as Map<String, dynamic>));
+      files.fileToOpen = Uint8List.fromList(
+        utf8.encode(jsonEncode(duplicated)),
+      );
+
+      expect(await backup.chooseImport(), isNull);
+      expect(backup.problem, BoardBackupProblem.invalidContent);
+      expect(choices.board, BoardChoices.original);
+      expect(boardStore.saveCount, 0);
+      expect(store.saveCount, 0);
+    });
+
+    test('if the board cannot be saved, nothing changes', () async {
+      files.fileToOpen = backupWith(customBoard, _on);
+      final chosen = await backup.chooseImport();
+      boardStore.saveError = StateError('disk full');
+      await backup.applyImport(chosen!);
+
+      expect(backup.outcome, BackupOutcome.importFailed);
+      expect(choices.board, BoardChoices.original);
+      expect(boardStore.savedText, isNull);
+      expect(preferences.preferences, _off);
+      expect(store.saveCount, 0);
+    });
+
+    test('if the settings cannot be saved after the board, the previous '
+        'board is saved back and nothing on screen changes', () async {
+      await choices.add(snack);
+      final before = choices.board;
+      files.fileToOpen = backupWith(customBoard.withMoved('food', 3), _on);
+      final chosen = await backup.chooseImport();
+      store.saveError = StateError('disk full');
+      await backup.applyImport(chosen!);
+
+      expect(backup.outcome, BackupOutcome.importFailed);
+      expect(choices.board, before);
+      expect(boardStore.saved, before);
+      expect(preferences.preferences, _off);
+      expect(store.saved, _off);
+    });
+
+    test('an import is not applied while saved choices are still '
+        'loading', () async {
+      boardStore = FakeBoardChoicesStore(BoardChoices.original.withAdded(snack))
+        ..pendingLoad = Completer();
+      choices = BoardChoicesController(store: boardStore);
+      final loading = choices.load();
+      backup = BoardBackupController(
+        files: files,
+        preferences: preferences,
+        choices: choices,
+      );
+      files.fileToOpen = backupWith(customBoard, _on);
+      await backup.applyImport((await backup.chooseImport())!);
+      expect(backup.outcome, BackupOutcome.importFailed);
+      expect(preferences.preferences, _off);
+
+      boardStore.pendingLoad!.complete();
+      await loading;
+      expect(choices.board.choices, hasLength(7));
+      expect(boardStore.saveCount, 0);
     });
   });
 }

@@ -28,11 +28,11 @@ Durable local storage of communication is deliberately deferred until its data l
 
 ## Display settings
 
-The high-contrast setting is the only thing CareBridge saves. It is stored on the device with [`shared_preferences`](https://pub.dev/packages/shared_preferences) (SharedPreferences on Android, UserDefaults on iOS) and is never sent anywhere by CareBridge. Like other app data, it may be included in the device's own backups if the person has turned those on.
+CareBridge saves only the high-contrast setting and the caregiver's choices (their words, phrases, built-in picture and color names, order, and visibility). They are stored on the device with [`shared_preferences`](https://pub.dev/packages/shared_preferences) (SharedPreferences on Android, UserDefaults on iOS) and are never sent anywhere by CareBridge. Choices hold whatever words a caregiver types, so caregivers decide what personal details, if any, they contain. Like other app data, it may be included in the device's own backups if the person has turned those on.
 
 ## Backup files
 
-A caregiver can export settings to a file and import it elsewhere. The file holds only the high-contrast setting, with no identifiers, history, or medical information, and is saved or opened only where the caregiver chooses in the system's file dialog. See [Backup and restore](backup.md).
+A caregiver can export settings to a file and import it elsewhere. The file holds only the high-contrast setting and the choices, with no device or account identifiers, history, or medical information, and is saved or opened only where the caregiver chooses in the system's file dialog. See [Backup and restore](backup.md).
 
 ## Network access
 

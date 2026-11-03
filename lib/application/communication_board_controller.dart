@@ -77,6 +77,31 @@ class CommunicationBoardController extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// Called when the caregiver changes the board. The selection stays only
+  /// while the selected choice is still shown exactly as it was activated,
+  /// so the confirmation never shows words or a picture that were not the
+  /// ones communicated.
+  void retainSelectionIn(List<CommunicationChoice> shownChoices) {
+    final selected = _selectedChoice;
+    if (_isDisposed || selected == null) return;
+    for (final choice in shownChoices) {
+      if (choice.id != selected.id) continue;
+      if (choice.label == selected.label &&
+          choice.spokenPhrase == selected.spokenPhrase &&
+          choice.visual == selected.visual &&
+          choice.isEnabled) {
+        // A new place on the board is not a different choice.
+        if (choice != selected) _selectedChoice = choice;
+        return;
+      }
+      break;
+    }
+    _selectedChoice = null;
+    _lastActivatedChoiceId = null;
+    _lastActivatedAt = null;
+    notifyListeners();
+  }
+
   Future<void> _acknowledge() async {
     try {
       await tactileFeedback?.acknowledge();

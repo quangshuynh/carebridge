@@ -2,24 +2,30 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import 'board_choices.dart';
 import 'display_preferences.dart';
 
-/// Everything a CareBridge backup carries: the caregiver settings this app
-/// saves on the device. The board's choices are built in and are not part of
-/// a backup, and neither is anything about who uses the app or what they
-/// communicated.
+/// Everything a CareBridge backup carries: the caregiver settings and the
+/// board's choices as this device saves them. Never anything about who uses
+/// the app or what they communicated.
 @immutable
 class BoardBackup {
-  const BoardBackup({required this.displayPreferences});
+  const BoardBackup({required this.displayPreferences, this.board});
 
   final DisplayPreferences displayPreferences;
 
-  @override
-  bool operator ==(Object other) =>
-      other is BoardBackup && other.displayPreferences == displayPreferences;
+  /// The board's choices. Null only for a version 1 backup, made before
+  /// choices could be changed; importing one leaves the board as it is.
+  final BoardChoices? board;
 
   @override
-  int get hashCode => displayPreferences.hashCode;
+  bool operator ==(Object other) =>
+      other is BoardBackup &&
+      other.displayPreferences == displayPreferences &&
+      other.board == board;
+
+  @override
+  int get hashCode => Object.hash(displayPreferences, board);
 }
 
 /// Why a file was not accepted as a backup.
@@ -48,29 +54,45 @@ class BoardBackupException implements Exception {
   String toString() => 'BoardBackupException(${problem.name}): $detail';
 }
 
-/// Version 1 of the backup file. A backup is small UTF-8 JSON data with a
-/// fixed set of fields; nothing in it is ever run, opened, or followed.
+/// The backup file. A backup is small UTF-8 JSON data with a fixed set of
+/// fields; nothing in it is ever run, opened, or followed. Version 2 adds
+/// the board's choices; version 1 files are still read.
 ///
 /// ```json
 /// {
 ///   "format": "carebridge.board-backup",
-///   "schemaVersion": 1,
+///   "schemaVersion": 2,
 ///   "settings": {
 ///     "highContrast": false
+///   },
+///   "board": {
+///     "choices": [
+///       {
+///         "id": "food",
+///         "label": "Food",
+///         "phrase": "I would like something to eat.",
+///         "icon": "food",
+///         "color": "orange",
+///         "visible": true
+///       }
+///     ]
 ///   }
 /// }
 /// ```
 abstract final class BoardBackupFormat {
   static const formatId = 'carebridge.board-backup';
-  static const schemaVersion = 1;
+  static const schemaVersion = 2;
 
-  /// Far above any valid backup, small enough to read and check at once.
-  static const maxBytes = 16 * 1024;
+  /// Far above any valid backup (a full board of the longest choices is
+  /// under 40 KiB), small enough to read and check at once.
+  static const maxBytes = 64 * 1024;
   static const fileExtension = 'json';
   static const mediaType = 'application/json';
 
-  static const _rootFields = {'format', 'schemaVersion', 'settings'};
+  static const _rootFieldsV1 = {'format', 'schemaVersion', 'settings'};
+  static const _rootFields = {'format', 'schemaVersion', 'settings', 'board'};
   static const _settingsFields = {'highContrast'};
+  static const _boardFields = {'choices'};
 
   /// A sensible file name that names no person or device.
   static String fileNameFor(DateTime date) {
@@ -82,12 +104,18 @@ abstract final class BoardBackupFormat {
   /// The same backup always produces the same text: fixed field order,
   /// two-space indentation, and a final newline.
   static String encode(BoardBackup backup) {
+    final board = backup.board;
+    if (board == null) {
+      throw ArgumentError.value(backup, 'backup', 'has no board to export');
+    }
+    board.validate();
     final document = <String, Object>{
       'format': formatId,
       'schemaVersion': schemaVersion,
       'settings': <String, Object>{
         'highContrast': backup.displayPreferences.highContrast,
       },
+      'board': <String, Object>{'choices': board.toJson()},
     };
     return '${const JsonEncoder.withIndent('  ').convert(document)}\n';
   }
@@ -144,7 +172,11 @@ abstract final class BoardBackupFormat {
     }
     final repeated = _firstRepeatedField(json);
     if (repeated != null) throw _invalid('"$repeated" appears more than once');
-    _onlyKnownFields(root, _rootFields, 'the backup');
+    _onlyKnownFields(
+      root,
+      version == 1 ? _rootFieldsV1 : _rootFields,
+      'the backup',
+    );
 
     final settings = root['settings'];
     if (settings is! Map<String, Object?>) {
@@ -155,6 +187,20 @@ abstract final class BoardBackupFormat {
     if (settings.containsKey('highContrast') && highContrast is! bool) {
       throw _invalid('"highContrast" must be true or false');
     }
+
+    BoardChoices? board;
+    if (version >= 2) {
+      final boardField = root['board'];
+      if (boardField is! Map<String, Object?>) {
+        throw _invalid('"board" must be an object');
+      }
+      _onlyKnownFields(boardField, _boardFields, '"board"');
+      try {
+        board = BoardChoices.fromJson(boardField['choices']);
+      } on BoardChoicesException catch (error) {
+        throw _invalid('"board": ${error.detail}');
+      }
+    }
     // An absent setting means the standard default, never "keep the current
     // value", so the result of an import never depends on the device.
     return BoardBackup(
@@ -162,6 +208,7 @@ abstract final class BoardBackupFormat {
         highContrast:
             highContrast as bool? ?? DisplayPreferences.standard.highContrast,
       ),
+      board: board,
     );
   }
 

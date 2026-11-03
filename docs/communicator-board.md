@@ -1,6 +1,6 @@
 # Communicator board
 
-The communicator board is the only screen in CareBridge today. It opens directly when the app starts. Nothing waits for speech, an account, or a network connection.
+The communicator board is the screen CareBridge opens to when it starts. Settings and the caregiver's choice editor are reached from it only by a deliberate hold. Nothing waits for speech, an account, or a network connection.
 
 <div class="cb-screens" markdown>
 
@@ -14,9 +14,9 @@ The communicator board is the only screen in CareBridge today. It opens directly
 
 </div>
 
-## Sample choices
+## Original choices
 
-The board currently shows six bundled sample choices:
+Until a caregiver changes them, the board shows six built-in choices:
 
 | Choice   | Spoken phrase                    |
 | -------- | -------------------------------- |
@@ -27,8 +27,8 @@ The board currently shows six bundled sample choices:
 | Rest     | I need to rest.                  |
 | Finished | I am finished.                   |
 
-!!! info "Demo content"
-    These choices, pictures, and phrases are placeholders for development and testing. They are not personalized. Choosing a person's own words, pictures, and order is planned caregiver work that does not exist yet.
+!!! info "Starting point"
+    These choices, pictures, and phrases are a starting point, not personalized content. Caregivers can add choices and change their words, phrases, pictures, colors, order, and visibility. See [Customizing choices](customizing-choices.md).
 
 Each choice uses a standard Material icon alongside its text label. The icons have not been validated with any particular communicator.
 

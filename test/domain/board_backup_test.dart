@@ -1,15 +1,29 @@
 // Backup format (issue #8): versioned, deterministic, and parsed as data
-// only, with every invalid file rejected as a whole.
+// only, with every invalid file rejected as a whole. Version 2 adds the
+// board's choices; version 1 files still import as settings only.
 import 'dart:convert';
 
 import 'package:carebridge/domain/board_backup.dart';
+import 'package:carebridge/domain/board_choices.dart';
 import 'package:carebridge/domain/display_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const _highContrast = BoardBackup(
+final _highContrast = BoardBackup(
+  displayPreferences: const DisplayPreferences(highContrast: true),
+  board: BoardChoices.original,
+);
+final _standard = BoardBackup(
+  displayPreferences: DisplayPreferences.standard,
+  board: BoardChoices.original,
+);
+
+/// What a version 1 file holds: settings and no choices.
+const _legacyHighContrast = BoardBackup(
   displayPreferences: DisplayPreferences(highContrast: true),
 );
-const _standard = BoardBackup(displayPreferences: DisplayPreferences.standard);
+const _legacyStandard = BoardBackup(
+  displayPreferences: DisplayPreferences.standard,
+);
 
 BoardBackup _decodeText(String text) =>
     BoardBackupFormat.decode(utf8.encode(text));
@@ -24,16 +38,52 @@ String _withSettings(String settings, {Object version = 1}) =>
 
 void main() {
   group('encode', () {
-    test('writes the documented version 1 document exactly', () {
+    test('writes the documented version 2 document exactly', () {
+      final board = BoardChoices([BoardChoices.original.choices.first]);
       expect(
-        BoardBackupFormat.encode(_highContrast),
+        BoardBackupFormat.encode(
+          BoardBackup(
+            displayPreferences: const DisplayPreferences(highContrast: true),
+            board: board,
+          ),
+        ),
         '{\n'
         '  "format": "carebridge.board-backup",\n'
-        '  "schemaVersion": 1,\n'
+        '  "schemaVersion": 2,\n'
         '  "settings": {\n'
         '    "highContrast": true\n'
+        '  },\n'
+        '  "board": {\n'
+        '    "choices": [\n'
+        '      {\n'
+        '        "id": "food",\n'
+        '        "label": "Food",\n'
+        '        "phrase": "I would like something to eat.",\n'
+        '        "icon": "food",\n'
+        '        "color": "orange",\n'
+        '        "visible": true\n'
+        '      }\n'
+        '    ]\n'
         '  }\n'
         '}\n',
+      );
+    });
+
+    test('refuses to write a backup without a valid board', () {
+      expect(
+        () => BoardBackupFormat.encode(_legacyStandard),
+        throwsArgumentError,
+      );
+      expect(
+        () => BoardBackupFormat.encode(
+          BoardBackup(
+            displayPreferences: DisplayPreferences.standard,
+            board: BoardChoices([
+              BoardChoices.original.choices.first.copyWith(isVisible: false),
+            ]),
+          ),
+        ),
+        throwsA(isA<BoardChoicesException>()),
       );
     });
 
@@ -52,8 +102,9 @@ void main() {
       final document = jsonDecode(
         BoardBackupFormat.encode(_standard),
       ) as Map<String, Object?>;
-      expect(document.keys, ['format', 'schemaVersion', 'settings']);
+      expect(document.keys, ['format', 'schemaVersion', 'settings', 'board']);
       expect((document['settings']! as Map).keys, ['highContrast']);
+      expect((document['board']! as Map).keys, ['choices']);
       // No paths, identifiers, timestamps, or history.
       final text = BoardBackupFormat.encode(_standard);
       expect(text, isNot(contains('/')));
@@ -85,7 +136,7 @@ void main() {
 
   group('optional fields', () {
     test('a missing setting takes the standard default', () {
-      expect(_decodeText(_withSettings('{}')), _standard);
+      expect(_decodeText(_withSettings('{}')), _legacyStandard);
     });
 
     test('field order and whitespace do not matter', () {
@@ -94,7 +145,7 @@ void main() {
           '{"settings":{"highContrast":true},"schemaVersion":1,'
           '"format":"carebridge.board-backup"}',
         ),
-        _highContrast,
+        _legacyHighContrast,
       );
     });
 
@@ -152,7 +203,7 @@ void main() {
     test('a future schema version, even with fields this version does not '
         'know', () {
       expect(
-        () => _decodeText(_withSettings('{}', version: 2)),
+        () => _decodeText(_withSettings('{}', version: 3)),
         _rejectedAs(BoardBackupProblem.newerVersion),
       );
       expect(
@@ -253,5 +304,118 @@ void main() {
         ),
       ),
     );
+  });
+
+  group('version 2 board', () {
+    final custom = BoardChoices.original
+        .withAdded(
+          const ChoiceDraft(
+            label: 'Café "latte"',
+            spokenPhrase: r'Une boisson chaude, s’il vous plaît \ 😀',
+            iconId: 'drink',
+            colorId: 'pink',
+          ),
+        )
+        .withMoved('custom-1', -3)
+        .withVisibility('rest', visible: false);
+    final backup = BoardBackup(
+      displayPreferences: const DisplayPreferences(highContrast: true),
+      board: custom,
+    );
+
+    test('a customized board round trips exactly, with order, hidden '
+        'choices, and Unicode', () {
+      final bytes = BoardBackupFormat.encodeBytes(backup);
+      final restored = BoardBackupFormat.decode(bytes);
+      expect(restored, backup);
+      expect(BoardBackupFormat.encodeBytes(restored), bytes);
+    });
+
+    test('a full board of the longest choices fits under the size limit', () {
+      var full = BoardChoices.original;
+      while (!full.isFull) {
+        full = full.withAdded(
+          ChoiceDraft(
+            label: '"' * BoardLimits.maxLabelLength,
+            spokenPhrase: '😀' * BoardLimits.maxPhraseLength,
+            iconId: 'question',
+            colorId: 'white',
+          ),
+        );
+      }
+      final bytes = BoardBackupFormat.encodeBytes(
+        BoardBackup(
+          displayPreferences: DisplayPreferences.standard,
+          board: full,
+        ),
+      );
+      expect(bytes.length, lessThan(BoardBackupFormat.maxBytes));
+      expect(BoardBackupFormat.decode(bytes).board, full);
+    });
+
+    String withChoices(String choices) =>
+        '{"format": "carebridge.board-backup", "schemaVersion": 2, '
+        '"settings": {}, "board": {"choices": $choices}}';
+    const food =
+        '{"id": "food", "label": "Food", "phrase": "Food.", "icon": "food", '
+        '"color": "orange", "visible": true}';
+
+    test('a minimal version 2 file is read', () {
+      expect(
+        _decodeText(withChoices('[$food]')).board!.choices.single.id,
+        'food',
+      );
+    });
+
+    final invalid = {
+      'a missing board':
+          '{"format": "carebridge.board-backup", "schemaVersion": 2, '
+          '"settings": {}}',
+      'a board that is not an object':
+          '{"format": "carebridge.board-backup", "schemaVersion": 2, '
+          '"settings": {}, "board": []}',
+      'an unknown board field':
+          '{"format": "carebridge.board-backup", "schemaVersion": 2, '
+          '"settings": {}, "board": {"choices": [$food], "images": []}}',
+      'duplicate ids': withChoices('[$food, $food]'),
+      'a repeated choice field': withChoices(
+        '[{"id": "food", "id": "food2", "label": "Food", "phrase": "Food.", '
+        '"icon": "food", "color": "orange", "visible": true}]',
+      ),
+      'an image path': withChoices(
+        '[{"id": "food", "label": "Food", "phrase": "Food.", '
+        '"icon": "/sdcard/DCIM/a.jpg", "color": "orange", "visible": true}]',
+      ),
+      'no shown choices': withChoices('[]'),
+      'a blank label': withChoices(food.replaceFirst('"Food"', '""')),
+      'too many choices': withChoices(
+        '[${List.generate(BoardLimits.maxChoices + 1, (i) => food.replaceFirst('"food"', '"c$i"')).join(',')}]',
+      ),
+      'a board in a version 1 file':
+          '{"format": "carebridge.board-backup", "schemaVersion": 1, '
+          '"settings": {}, "board": {"choices": [$food]}}',
+    };
+    invalid.forEach((name, text) {
+      test('rejects $name', () {
+        expect(
+          () => _decodeText(text),
+          _rejectedAs(BoardBackupProblem.invalidContent),
+        );
+      });
+    });
+  });
+
+  test('a version 1 backup still imports, as settings without a board', () {
+    final legacy = _decodeText(
+      '{\n'
+      '  "format": "carebridge.board-backup",\n'
+      '  "schemaVersion": 1,\n'
+      '  "settings": {\n'
+      '    "highContrast": true\n'
+      '  }\n'
+      '}\n',
+    );
+    expect(legacy, _legacyHighContrast);
+    expect(legacy.board, isNull);
   });
 }

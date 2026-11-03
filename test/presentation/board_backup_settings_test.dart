@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:carebridge/domain/board_backup.dart';
+import 'package:carebridge/domain/board_choices.dart';
 import 'package:carebridge/domain/display_preferences.dart';
 import 'package:carebridge/domain/sample_board.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,7 @@ Uint8List _backupOf({required bool highContrast}) =>
     BoardBackupFormat.encodeBytes(
       BoardBackup(
         displayPreferences: DisplayPreferences(highContrast: highContrast),
+        board: BoardChoices.original,
       ),
     );
 
@@ -114,8 +116,9 @@ void main() {
       expect(_status(tester), 'Backup saved. Your settings are unchanged.');
       expect(
         BoardBackupFormat.decode(files.savedFiles.single),
-        const BoardBackup(
-          displayPreferences: DisplayPreferences(highContrast: true),
+        BoardBackup(
+          displayPreferences: const DisplayPreferences(highContrast: true),
+          board: BoardChoices.original,
         ),
       );
       expect(store.saveCount, 0);
@@ -174,7 +177,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(_dialog), findsNothing);
-      expect(_status(tester), 'Backup imported. Your settings were replaced.');
+      expect(
+        _status(tester),
+        'Backup imported. Your settings and choices were replaced.',
+      );
       expect(store.saved, const DisplayPreferences(highContrast: true));
       expect(find.text('On'), findsOneWidget, reason: 'switch state in words');
 
@@ -228,7 +234,7 @@ void main() {
       ),
       'a backup from a newer version': (
         utf8.encode(
-          '{"format": "carebridge.board-backup", "schemaVersion": 2, '
+          '{"format": "carebridge.board-backup", "schemaVersion": 3, '
           '"settings": {"highContrast": true}}',
         ),
         'That backup is from a newer version of CareBridge. Update '

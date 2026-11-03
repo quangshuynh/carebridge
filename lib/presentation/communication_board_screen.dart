@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../application/board_backup_controller.dart';
+import '../application/board_choices_controller.dart';
 import '../application/communication_board_controller.dart';
 import '../application/display_preferences_controller.dart';
 import '../domain/communication_models.dart';
 import 'board_grid_layout.dart';
+import 'caregiver_route.dart';
 import 'settings_screen.dart';
 import 'widgets/communication_choice_card.dart';
 import 'widgets/communication_confirmation.dart';
@@ -13,13 +15,20 @@ import 'widgets/settings_hold_button.dart';
 
 class CommunicationBoardScreen extends StatelessWidget {
   const CommunicationBoardScreen({
-    required this.profile,
     required this.controller,
+    this.profile,
+    this.choices,
     required this.displayPreferences,
     this.backup,
     super.key,
   });
-  final CommunicatorProfile profile;
+
+  /// A fixed board. When null, the board shows [choices].
+  final CommunicatorProfile? profile;
+
+  /// The caregiver's choices, editable from settings. One of [profile] or
+  /// [choices] is given.
+  final BoardChoicesController? choices;
   final CommunicationBoardController controller;
   final DisplayPreferencesController displayPreferences;
 
@@ -37,10 +46,15 @@ class CommunicationBoardScreen extends StatelessWidget {
     if (ModalRoute.of(context)?.isCurrent == false) return;
     controller.stopSpeech();
     backup?.clearOutcome();
+    choices?.clearResult();
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) =>
-            SettingsScreen(preferences: displayPreferences, backup: backup),
+      caregiverRoute<void>(
+        context,
+        (context) => SettingsScreen(
+          preferences: displayPreferences,
+          choices: choices,
+          backup: backup,
+        ),
       ),
     );
   }
@@ -60,7 +74,7 @@ class CommunicationBoardScreen extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.all(gutter),
                 child: ListenableBuilder(
-                  listenable: controller,
+                  listenable: Listenable.merge([controller, choices]),
                   builder: (context, _) => LayoutBuilder(
                     builder: (context, constraints) => _BoardLayout(
                       area: constraints.biggest,
@@ -73,7 +87,7 @@ class CommunicationBoardScreen extends StatelessWidget {
                         onOpen: () => _openSettings(context),
                       ),
                       grid: _ChoiceGrid(
-                        choices: profile.enabledChoices,
+                        choices: (profile ?? choices!.profile).enabledChoices,
                         selectedId: controller.selectedChoice?.id,
                         spacing: spacing,
                         onActivate: controller.activate,
