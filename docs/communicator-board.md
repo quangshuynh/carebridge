@@ -92,7 +92,7 @@ Every choice is visible at once. The grid picks the column count that makes the 
 
 ## Settings button
 
-The board has no editing, menus, or navigation. Its one control is a round settings button at the end of the confirmation area, away from the choices. It opens only after a deliberate **one-second hold**, so a tap or an ordinary long press does nothing and the communicator stays on the board. Settings currently holds a single display option, [high contrast](accessibility.md#high-contrast). Nothing in settings can change the choices or phrases. A large **Back to board** button, the back arrow, or the system back gesture returns to the board.
+The board has no editing, menus, or navigation. Its one control is a round settings button at the end of the confirmation area, away from the choices. It opens only after a deliberate **one-second hold**, so a tap or an ordinary long press does nothing and the communicator stays on the board. Settings holds a single display option, [high contrast](accessibility.md#high-contrast), and, below **Back to board**, [backup and restore](backup.md) for caregivers. Nothing in settings can change the choices or phrases. A large **Back to board** button, the back arrow, or the system back gesture returns to the board.
 
 Edge gestures such as the Android back gesture or the iOS home indicator are not blocked. Caregivers who want to keep the app on screen during a session can use Android app pinning or iOS Guided Access.
 

@@ -14,6 +14,7 @@ nav:
   - Communicator board: communicator-board.md
   - Accessibility: accessibility.md
   - Privacy: privacy.md
+  - Backup and restore: backup.md
   - Architecture: architecture.md
   - Device validation: device-validation.md
   - Contributing: contributing.md

@@ -66,6 +66,15 @@ Record the device model, operating system version, CareBridge commit, date, and 
 - [ ] Turning on High contrast changes the board at once. Text, icons, and borders are clearly darker, and the selected choice is still obvious in bright light and glare.
 - [ ] High contrast is still on after force-closing and reopening CareBridge, and after a device restart.
 - [ ] On iPhone and iPad, turning on Settings, Accessibility, Display & Text Size, Increase Contrast switches CareBridge to high contrast.
+
+### Backup and restore
+
+- [ ] Export board backup opens the system save dialog, saves `carebridge-backup-YYYY-MM-DD.json`, and shows "Backup saved". Cancelling shows "Export cancelled".
+- [ ] Exporting works in airplane mode to a local folder.
+- [ ] Importing that file on a second device shows the confirmation and, after Replace settings, turns on high contrast that survives a restart.
+- [ ] Importing a non-JSON file, an edited file, and a file with `"schemaVersion": 2` each shows a clear message and changes nothing.
+- [ ] With TalkBack or VoiceOver, the backup buttons, confirmation, and result messages are announced.
+- [ ] The merged release Android manifest requests no new permissions.
 - [ ] On Android 14 or later, note which system contrast setting (if any) switches CareBridge to high contrast.
 - [ ] Opening settings while a phrase is speaking stops it. Returning shows the same selection and does not replay the phrase.
 - [ ] With a Bluetooth keyboard or switch access, a focus ring is clearly visible on the focused choice.
