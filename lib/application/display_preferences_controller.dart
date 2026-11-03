@@ -44,6 +44,19 @@ class DisplayPreferencesController extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// Replaces every preference with [restored], as when a backup is
+  /// imported. Unlike a single change, this is saved first and applied only
+  /// once saved: if saving fails it throws and nothing changes, in memory or
+  /// in storage.
+  Future<void> replaceWith(DisplayPreferences restored) async {
+    if (_isDisposed) throw StateError('Display preferences are disposed.');
+    await store?.save(restored);
+    _changedThisSession = true;
+    if (_isDisposed || restored == _preferences) return;
+    _preferences = restored;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _isDisposed = true;

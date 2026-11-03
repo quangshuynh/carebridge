@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app.dart';
+import 'infrastructure/file_picker_backup_files.dart';
 import 'infrastructure/flutter_tts_speech_service.dart';
 import 'infrastructure/platform_tactile_feedback.dart';
 import 'infrastructure/shared_preferences_display_preferences_store.dart';
@@ -15,6 +16,7 @@ void main() {
       speechService: FlutterTtsSpeechService(),
       tactileFeedback: const PlatformTactileFeedback(),
       displayPreferencesStore: SharedPreferencesDisplayPreferencesStore(),
+      backupFiles: const FilePickerBackupFiles(),
     ),
   );
 }

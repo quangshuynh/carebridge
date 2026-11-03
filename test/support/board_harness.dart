@@ -5,6 +5,7 @@ import 'package:carebridge/domain/sample_board.dart';
 import 'package:carebridge/presentation/care_bridge_theme.dart';
 import 'package:carebridge/presentation/communication_board_screen.dart';
 import 'package:carebridge/presentation/widgets/settings_hold_button.dart';
+import 'package:carebridge/services/backup_files.dart';
 import 'package:carebridge/services/display_preferences_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +21,7 @@ Future<void> pumpCareBridge(
   FakeSpeechService? speech,
   FakeTactileFeedback? haptics,
   DisplayPreferencesStore? store,
+  BackupFiles? backupFiles,
   CommunicatorProfile profile = sampleCommunicator,
   DateTime Function()? now,
   bool systemHighContrast = false,
@@ -41,6 +43,7 @@ Future<void> pumpCareBridge(
       speechService: speech ?? FakeSpeechService(),
       tactileFeedback: haptics,
       displayPreferencesStore: store,
+      backupFiles: backupFiles,
       profile: profile,
       now: now,
     ),
